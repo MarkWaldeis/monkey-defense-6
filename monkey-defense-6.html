@@ -29,7 +29,10 @@ canvas{
 #btdMapSelect:not(.hidden),#btdDiffSelect:not(.hidden),#btdSidebar:not(.hidden),#btdUpgradePanel:not(.hidden){pointer-events:auto}
 .hidden{display:none!important;pointer-events:none!important}
 #btdMapSelect{z-index:30}
+#btdDiffSelect{z-index:40}
 #btdSidebar{z-index:25}
+#btdDiffSelect:not(.hidden),#btdDiffSelect:not(.hidden) *{pointer-events:auto}
+#btdDiffSelect .btd-diff-card,#btdDiffSelect .btd-back{cursor:pointer;touch-action:manipulation}
 .btd-map-card,.btd-map-card *{cursor:pointer}
 .btd-map-thumb{pointer-events:none} /* clicks go to card */
 
@@ -134,9 +137,9 @@ canvas{
   position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
   background:radial-gradient(ellipse at center,rgba(20,40,30,.55),rgba(5,8,12,.88)),
     url('public/assets/ui/btd/home-screen-bg.png') center/cover no-repeat;
-  z-index:35;pointer-events:auto;
+  z-index:40;pointer-events:auto !important;
 }
-.btd-diff-panel{position:relative;z-index:1;text-align:center;width:min(980px,94vw);padding:20px}
+.btd-diff-panel{position:relative;z-index:2;text-align:center;width:min(980px,94vw);padding:20px;pointer-events:auto}
 .btd-diff-title{
   font-family:'Luckiest Guy',cursive;font-size:clamp(28px,4vw,42px);color:#ffd700;
   text-shadow:0 3px 0 #5a3d0e,0 6px 16px rgba(0,0,0,.5);margin-bottom:6px;letter-spacing:1px;
@@ -148,6 +151,8 @@ canvas{
   background:linear-gradient(180deg,#e8dcc8,#c4b08a);border-radius:18px;padding:18px 12px 16px;
   border:3px solid #a89068;cursor:pointer;box-shadow:0 8px 20px rgba(0,0,0,.4);
   transition:transform .15s,box-shadow .15s;color:#1a1a1a;
+  pointer-events:auto;user-select:none;-webkit-user-select:none;
+  font:inherit;width:100%;
 }
 .btd-diff-card:hover{transform:scale(1.05);box-shadow:0 0 0 3px #f5c542,0 10px 24px rgba(0,0,0,.45)}
 .btd-diff-card:active{transform:scale(.96)}
@@ -3476,10 +3481,38 @@ function initBtdUi() {
       mapStartPending = true;
       setTimeout(() => {
         mapStartPending = false;
+        btdDiffBuiltForMap = -1; // force rebuild on enter
         gameState = State.DIFFICULTY_SELECT;
-        renderBtdDiffSelect();
         syncBtdUi();
       }, 80);
+    });
+  }
+
+  // Difficulty cards — event delegation (must NOT rebuild every frame)
+  const diffHost = btdEl('btdDiffCards');
+  if (diffHost && !diffHost._btdBound) {
+    diffHost._btdBound = true;
+    const onPick = (e) => {
+      const card = e.target && e.target.closest ? e.target.closest('.btd-diff-card') : null;
+      if (!card || !diffHost.contains(card)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const idx = parseInt(card.getAttribute('data-diff'), 10);
+      if (isNaN(idx)) return;
+      confirmDifficultyAndStart(idx);
+    };
+    diffHost.addEventListener('click', onPick);
+    diffHost.addEventListener('pointerup', (e) => {
+      // Extra path for stubborn touch/mouse where click is swallowed
+      if (e.pointerType === 'touch' || e.pointerType === 'pen') onPick(e);
+    });
+    diffHost.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const card = e.target && e.target.closest ? e.target.closest('.btd-diff-card') : null;
+      if (!card) return;
+      e.preventDefault();
+      const idx = parseInt(card.getAttribute('data-diff'), 10);
+      if (!isNaN(idx)) confirmDifficultyAndStart(idx);
     });
   }
 
@@ -3501,11 +3534,15 @@ function initBtdUi() {
     };
   });
   const diffBack = btdEl('btdDiffBack');
-  if (diffBack) {
-    diffBack.onclick = () => {
+  if (diffBack && !diffBack._btdBound) {
+    diffBack._btdBound = true;
+    diffBack.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       gameState = State.MAP_SELECT;
       mapStartPending = false;
       btdMapsBuilt = false;
+      btdDiffBuiltForMap = -1;
       sfx('click');
       syncBtdUi();
     };
@@ -3746,18 +3783,56 @@ function renderBtdMaps() {
   });
 }
 
+/** Start a game with DIFFS[diffIdx]. Safe to call from delegated clicks. */
+function confirmDifficultyAndStart(diffIdx) {
+  if (gameState !== State.DIFFICULTY_SELECT) return;
+  if (mapStartPending) return;
+  if (diffIdx < 0 || diffIdx >= DIFFS.length) return;
+  selectedDiff = diffIdx | 0;
+  mapStartPending = true;
+  sfx('click');
+  // Visual feedback on card if present
+  const host = btdEl('btdDiffCards');
+  if (host) {
+    const cards = host.querySelectorAll('.btd-diff-card');
+    if (cards[selectedDiff]) cards[selectedDiff].style.transform = 'scale(0.94)';
+  }
+  setTimeout(() => {
+    try {
+      startGame();
+    } catch (err) {
+      console.error('startGame failed', err);
+      mapStartPending = false;
+      gameState = State.MAP_SELECT;
+      btdDiffBuiltForMap = -1;
+      alert('Could not start map: ' + (err && err.message ? err.message : err));
+      syncBtdUi();
+      return;
+    }
+    mapStartPending = false;
+    btdMapsBuilt = false;
+    btdDiffBuiltForMap = -1;
+    btdLastState = null;
+    syncBtdUi();
+  }, 50);
+}
+
 function renderBtdDiffSelect() {
   const host = btdEl('btdDiffCards');
   const title = btdEl('btdDiffMapName');
   if (!host) return;
   const map = MAPS[selectedMap];
   if (title) title.textContent = (map ? map.name : 'Map') + ' — Difficulty';
+  // Build once; clicks use event delegation on #btdDiffCards (survives if needed)
   host.innerHTML = '';
   const keys = ['easy', 'medium', 'hard', 'expert'];
   DIFFS.forEach((d, i) => {
     const card = document.createElement('button');
     card.type = 'button';
     card.className = 'btd-diff-card ' + keys[i];
+    card.setAttribute('data-diff', String(i));
+    card.setAttribute('role', 'button');
+    card.tabIndex = 0;
     card.innerHTML =
       '<div class="ico">' + d.icon + '</div>' +
       '<div class="nm">' + d.name + '</div>' +
@@ -3765,25 +3840,6 @@ function renderBtdDiffSelect() {
       d.label + ' · Cash ×' + d.cashMul +
       (d.hpMul > 1 ? '<br>Boss HP ×' + d.hpMul : '') +
       '<br>Sell ' + Math.round((d.sellMul || 0.7) * 100) + '%</div>';
-    card.onclick = () => {
-      if (mapStartPending || gameState === State.GAMEPLAY) return;
-      selectedDiff = i;
-      mapStartPending = true;
-      sfx('click');
-      setTimeout(() => {
-        try {
-          startGame();
-        } catch (err) {
-          console.error('startGame failed', err);
-          alert('Could not start map: ' + (err && err.message ? err.message : err));
-          gameState = State.MAP_SELECT;
-        }
-        mapStartPending = false;
-        btdMapsBuilt = false;
-        btdLastState = null;
-        syncBtdUi();
-      }, 60);
-    };
     host.appendChild(card);
   });
 }
@@ -3915,6 +3971,7 @@ let btdLastCash = -1;
 let btdLastPlace = null;
 let btdLastSpeed = -1;
 let btdMapsBuilt = false;
+let btdDiffBuiltForMap = -1; // only rebuild difficulty cards when map changes / enter screen
 
 function syncBtdUi() {
   initBtdUi();
@@ -3934,16 +3991,24 @@ function syncBtdUi() {
   } else {
     mapEl.classList.add('hidden');
     mapEl.style.display = 'none';
+    mapEl.style.pointerEvents = 'none';
   }
   if (diffEl) {
     if (showDiff) {
       diffEl.classList.remove('hidden');
       diffEl.style.display = 'flex';
       diffEl.style.pointerEvents = 'auto';
-      renderBtdDiffSelect();
+      // CRITICAL: rebuild cards only once when entering / map changes — every-frame rebuild
+      // was destroying buttons mid-click and soft-locking the difficulty menu
+      if (btdDiffBuiltForMap !== selectedMap || btdLastState !== State.DIFFICULTY_SELECT) {
+        renderBtdDiffSelect();
+        btdDiffBuiltForMap = selectedMap;
+      }
     } else {
       diffEl.classList.add('hidden');
       diffEl.style.display = 'none';
+      diffEl.style.pointerEvents = 'none';
+      btdDiffBuiltForMap = -1;
     }
   }
   if (showSide) {
