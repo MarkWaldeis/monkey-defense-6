@@ -10,9 +10,14 @@
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{width:100%;height:100%;overflow:hidden;background:#0a0a14;font-family:'Nunito',Segoe UI,Arial,sans-serif}
 canvas{display:block;margin:0 auto;cursor:default;background:#0a0a14;position:relative;z-index:1}
-#uiRoot{position:fixed;inset:0;pointer-events:none;z-index:10}
-#uiRoot>*{pointer-events:auto}
-.hidden{display:none!important}
+#uiRoot{position:fixed;inset:0;pointer-events:none;z-index:20}
+#uiRoot .btd-interactive{pointer-events:auto}
+#btdMapSelect:not(.hidden),#btdSidebar:not(.hidden){pointer-events:auto}
+.hidden{display:none!important;pointer-events:none!important}
+#btdMapSelect{z-index:30}
+#btdSidebar{z-index:25}
+.btd-map-card,.btd-map-card *{cursor:pointer}
+.btd-map-thumb{pointer-events:none} /* clicks go to card */
 
 /* ─── BTD MAP SELECT ─── */
 #btdMapSelect{
@@ -1397,7 +1402,13 @@ function handleClick() {
   const mx = mouse.x, my = mouse.y;
   if (gameState === State.LOADING) return;
   if (gameState === State.MAIN_MENU) {
-    if (hitBtn(W/2-120, H/2+20, 240, 60)) { gameState = State.MAP_SELECT; sfx('click'); syncBtdUi(); }
+    if (hitBtn(W/2-120, H/2+20, 240, 60)) {
+      gameState = State.MAP_SELECT;
+      btdMapsBuilt = false;
+      btdLastState = null;
+      sfx('click');
+      syncBtdUi();
+    }
     if (hitBtn(W-80, 20, 50, 40)) { muted = !muted; sfx('click'); }
     return;
   }
@@ -1974,9 +1985,45 @@ function btdEl(id) { return document.getElementById(id); }
 function initBtdUi() {
   if (btdUiReady) return;
   btdUiReady = true;
-  // map select background
+  // Unlock all maps so selection always works
+  for (let i = 0; i < MAPS.length; i++) unlockedMaps[i] = true;
+  try { localStorage.setItem('md6_unlocked', JSON.stringify(unlockedMaps)); } catch (e) {}
+
   const ms = btdEl('btdMapSelect');
   if (ms) ms.style.backgroundImage = 'url(' + BTD_BASE + 'home-screen-bg.png)';
+
+  // Event delegation — survives card rebuilds
+  const track = btdEl('btdMapTrack');
+  if (track && !track._btdBound) {
+    track._btdBound = true;
+    track.addEventListener('click', (e) => {
+      const card = e.target.closest('.btd-map-card');
+      if (!card || card.classList.contains('locked')) {
+        if (card) sfx('click');
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      const idx = parseInt(card.getAttribute('data-map'), 10);
+      if (isNaN(idx) || idx < 0 || idx >= MAPS.length) return;
+      selectedMap = idx;
+      sfx('click');
+      card.style.transform = 'scale(0.94)';
+      // Start game on next tick so UI can paint feedback
+      setTimeout(() => {
+        try {
+          startGame();
+        } catch (err) {
+          console.error('startGame failed', err);
+          alert('Could not start map: ' + (err && err.message ? err.message : err));
+        }
+        btdMapsBuilt = false;
+        btdLastState = null;
+        syncBtdUi();
+      }, 80);
+    });
+  }
+
   btdEl('btdMapBack').onclick = () => { gameState = State.MAIN_MENU; sfx('click'); syncBtdUi(); };
   btdEl('btdMapPrev').onclick = () => { btdMapPage = Math.max(0, btdMapPage - 1); renderBtdMaps(); sfx('click'); };
   btdEl('btdMapNext').onclick = () => {
@@ -1988,14 +2035,10 @@ function initBtdUi() {
       selectedDiff = parseInt(btn.dataset.diff, 10);
       btdEl('btdDiffBar').querySelectorAll('.btd-diff').forEach(b => b.classList.toggle('active', b === btn));
       sfx('click');
-      // Do not rebuild map cards — only tab highlight changes
     };
   });
   btdEl('btdHeroBtn').onclick = () => sfx('click');
-  btdEl('btdUpgradesBtn').onclick = () => {
-    if (selectedTower) { sfx('click'); /* panel already on canvas right */ }
-    else sfx('click');
-  };
+  btdEl('btdUpgradesBtn').onclick = () => sfx('click');
   btdEl('btdFfBtn').onclick = () => {
     gameSpeed = gameSpeed >= 3 ? 1 : gameSpeed + 1;
     btdEl('btdFfBtn').classList.toggle('active', gameSpeed > 1);
@@ -2024,6 +2067,9 @@ function renderBtdMaps() {
   const track = btdEl('btdMapTrack');
   const dots = btdEl('btdMapDots');
   if (!track) return;
+  // Always keep maps unlocked (selection must never soft-lock)
+  for (let i = 0; i < MAPS.length; i++) unlockedMaps[i] = true;
+
   const pages = Math.max(1, Math.ceil(MAPS.length / MAPS_PER_PAGE));
   btdMapPage = clamp(btdMapPage, 0, pages - 1);
   track.innerHTML = '';
@@ -2040,34 +2086,16 @@ function renderBtdMaps() {
         continue;
       }
       const map = MAPS[i];
-      const unlocked = unlockedMaps[i];
-      // Soft filter: maps with difficulty stars matching tab feel "featured"
       const card = document.createElement('div');
-      card.className = 'btd-map-card' + (unlocked ? '' : ' locked');
+      card.className = 'btd-map-card';
+      card.setAttribute('data-map', String(i));
+      card.setAttribute('role', 'button');
+      card.tabIndex = 0;
       card.innerHTML =
         '<div class="btd-map-title">' + map.name + '</div>' +
-        '<img class="btd-map-thumb" alt="" src="' + mapThumbFor(i) + '" style="filter:' + mapFilterFor(i) + '">' +
+        '<img class="btd-map-thumb" alt="" draggable="false" src="' + mapThumbFor(i) + '" style="filter:' + mapFilterFor(i) + '">' +
         '<div class="btd-map-stars">' + '★'.repeat(map.difficulty) + '☆'.repeat(4 - map.difficulty) +
-        (unlocked ? '' : ' 🔒') + '</div>';
-      if (unlocked) {
-        card.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          selectedMap = i;
-          sfx('click');
-          card.style.transform = 'scale(0.95)';
-          // Start immediately — difficulty already chosen via bottom tabs
-          startGame();
-          btdMapsBuilt = false;
-          syncBtdUi();
-        });
-      } else {
-        card.addEventListener('click', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          sfx('click');
-        });
-      }
+        ' · CLICK TO PLAY</div>';
       page.appendChild(card);
     }
     track.appendChild(page);
@@ -2076,7 +2104,6 @@ function renderBtdMaps() {
     dots.appendChild(dot);
   }
   track.style.transform = 'translateX(-' + (btdMapPage * 100) + '%)';
-  // sync difficulty tabs highlight
   btdEl('btdDiffBar').querySelectorAll('.btd-diff').forEach(b => {
     b.classList.toggle('active', parseInt(b.dataset.diff, 10) === selectedDiff);
   });
@@ -2182,18 +2209,32 @@ function syncBtdUi() {
   if (!mapEl || !sideEl) return;
   const showMap = gameState === State.MAP_SELECT || gameState === State.DIFFICULTY_SELECT;
   const showSide = gameState === State.GAMEPLAY || gameState === State.PAUSE;
-  mapEl.classList.toggle('hidden', !showMap);
-  sideEl.classList.toggle('hidden', !showSide);
 
-  // Only rebuild map cards when entering map select (NOT every frame —
-  // rebuilding destroys cards mid-click and blocks map selection).
-  if (showMap && (btdLastState !== gameState || !btdMapsBuilt)) {
+  // Explicit show/hide (class + style) so menu cannot soft-lock as invisible
+  if (showMap) {
+    mapEl.classList.remove('hidden');
+    mapEl.style.display = 'flex';
+    mapEl.style.pointerEvents = 'auto';
+  } else {
+    mapEl.classList.add('hidden');
+    mapEl.style.display = 'none';
+  }
+  if (showSide) {
+    sideEl.classList.remove('hidden');
+    sideEl.style.display = 'flex';
+    sideEl.style.pointerEvents = 'auto';
+  } else {
+    sideEl.classList.add('hidden');
+    sideEl.style.display = 'none';
+  }
+
+  // Rebuild map cards only when entering map select
+  if (showMap && (btdLastState !== State.MAP_SELECT && btdLastState !== State.DIFFICULTY_SELECT || !btdMapsBuilt)) {
     renderBtdMaps();
     btdMapsBuilt = true;
   }
   if (!showMap) btdMapsBuilt = false;
 
-  // Sidebar: refresh when cash / selection / speed changes
   if (showSide) {
     if (btdLastCash !== cash || btdLastPlace !== placingTower || btdLastState !== gameState) {
       renderBtdTowerGrid();
