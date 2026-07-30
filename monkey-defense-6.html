@@ -12,7 +12,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#0a0a14;font-family:
 canvas{display:block;margin:0 auto;cursor:default;background:#0a0a14;position:relative;z-index:1}
 #uiRoot{position:fixed;inset:0;pointer-events:none;z-index:20}
 #uiRoot .btd-interactive{pointer-events:auto}
-#btdMapSelect:not(.hidden),#btdSidebar:not(.hidden){pointer-events:auto}
+#btdMapSelect:not(.hidden),#btdSidebar:not(.hidden),#btdUpgradePanel:not(.hidden){pointer-events:auto}
 .hidden{display:none!important;pointer-events:none!important}
 #btdMapSelect{z-index:30}
 #btdSidebar{z-index:25}
@@ -198,6 +198,90 @@ canvas{display:block;margin:0 auto;cursor:default;background:#0a0a14;position:re
   position:fixed;pointer-events:none;z-index:40;display:none;border:2px solid rgba(255,255,255,.45);
   border-radius:50%;background:rgba(255,255,255,.08);transform:translate(-50%,-50%);
 }
+
+/* ─── BTD6 UPGRADE PANEL (3 paths × 5 tiers) ─── */
+#btdUpgradePanel{
+  position:absolute;top:48px;bottom:10px;width:min(300px,28vw);z-index:28;
+  display:none;flex-direction:column;
+  background:linear-gradient(180deg,#c4a574 0%,#a88855 12%,#8b6f3f 50%,#7a6035 100%);
+  border:3px solid #5a4320;border-radius:16px 0 0 16px;
+  box-shadow:-8px 0 24px rgba(0,0,0,.45),inset 0 2px 0 rgba(255,255,255,.25);
+  padding:10px 10px 12px;pointer-events:auto;
+  font-family:'Nunito',sans-serif;
+}
+#btdUpgradePanel:not(.hidden){display:flex}
+#btdUpgradePanel.side-left{
+  left:0;right:auto;border-radius:0 16px 16px 0;
+  box-shadow:8px 0 24px rgba(0,0,0,.45),inset 0 2px 0 rgba(255,255,255,.25);
+}
+#btdUpgradePanel.side-right{right:var(--side-w,220px);left:auto}
+#btdUpgradePanel.side-right.dock-left{right:auto;left:0;border-radius:0 16px 16px 0}
+.btd-upg-head{
+  display:flex;align-items:center;gap:10px;padding:8px;margin-bottom:8px;
+  background:linear-gradient(180deg,#fff8e7,#e8d4b0);border-radius:12px;border:2px solid #a89060;
+}
+.btd-upg-head img{
+  width:64px;height:64px;object-fit:contain;border-radius:10px;
+  background:radial-gradient(circle at 40% 30%,#7ec850,#3d8c2e);border:2px solid #2d6b1e;
+}
+.btd-upg-head-text{flex:1;min-width:0}
+.btd-upg-title{
+  font-family:'Luckiest Guy',cursive;font-size:18px;color:#1a1a1a;
+  text-shadow:0 1px 0 #fff;line-height:1.1;
+}
+.btd-upg-code{
+  font-weight:900;font-size:14px;color:#5d4037;margin-top:2px;
+}
+.btd-upg-stats{font-size:11px;color:#4e342e;font-weight:800;margin-top:2px;line-height:1.25}
+.btd-upg-close{
+  width:36px;height:36px;border-radius:50%;border:2px solid #fff;cursor:pointer;
+  background:linear-gradient(180deg,#ef5350,#c62828);color:#fff;font-size:18px;font-weight:900;
+  box-shadow:0 3px 0 #8e0000;
+}
+.btd-upg-paths{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:2px}
+.btd-path-row{
+  display:flex;align-items:stretch;gap:8px;
+  background:linear-gradient(180deg,rgba(255,248,230,.55),rgba(200,170,120,.35));
+  border:2px solid #6d5428;border-radius:12px;padding:6px;
+}
+.btd-path-tiers{
+  display:flex;flex-direction:column-reverse;justify-content:center;gap:3px;padding:2px 0;
+}
+.btd-tier-pip{
+  width:14px;height:14px;border-radius:3px;border:2px solid #3e2a0a;
+  background:#5a4a30;box-shadow:inset 0 1px 0 rgba(255,255,255,.15);
+}
+.btd-tier-pip.on{
+  background:linear-gradient(180deg,#9cff57,#43a047);border-color:#1b5e20;
+  box-shadow:0 0 6px rgba(129,199,132,.8);
+}
+.btd-tier-pip.next{background:linear-gradient(180deg,#ffe082,#ffb300);border-color:#f57f17}
+.btd-tier-pip.locked{opacity:.45}
+.btd-path-buy{
+  flex:1;display:flex;align-items:center;gap:8px;text-align:left;
+  border:2px solid #5d4037;border-radius:10px;padding:6px 8px;cursor:pointer;
+  background:linear-gradient(180deg,#efe0c0,#d4bc90);
+  transition:transform .12s,box-shadow .12s;min-height:52px;
+}
+.btd-path-buy:hover:not(:disabled){transform:scale(1.02);box-shadow:0 0 0 2px #f5c542}
+.btd-path-buy:disabled{cursor:not-allowed;filter:grayscale(.35);opacity:.75}
+.btd-path-buy.can-buy{background:linear-gradient(180deg,#fff3c4,#ffd54f);border-color:#f9a825}
+.btd-path-buy.owned-max{
+  background:linear-gradient(180deg,#c8e6c9,#81c784);border-color:#2e7d32;cursor:default;
+}
+.btd-path-buy .nm{font-family:'Luckiest Guy',cursive;font-size:13px;color:#1a1a1a;line-height:1.1}
+.btd-path-buy .ds{font-size:10px;font-weight:800;color:#5d4037;margin-top:2px}
+.btd-path-buy .pr{font-weight:900;font-size:14px;color:#2e7d32;margin-left:auto;white-space:nowrap}
+.btd-path-buy.cant .pr{color:#c62828}
+.btd-path-buy .icon{font-size:22px;line-height:1}
+.btd-upg-foot{display:flex;gap:8px;margin-top:8px}
+.btd-upg-foot button{
+  flex:1;height:44px;border-radius:12px;border:2px solid rgba(0,0,0,.25);cursor:pointer;
+  font-family:'Luckiest Guy',cursive;font-size:15px;color:#fff;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.3),0 3px 0 rgba(0,0,0,.25);
+}
+.btd-upg-target{background:linear-gradient(180deg,#64b5f6,#1565c0)}
+.btd-upg-sell{background:linear-gradient(180deg,#ef9a9a,#c62828)}
 </style>
 </head>
 <body>
@@ -234,6 +318,24 @@ canvas{display:block;margin:0 auto;cursor:default;background:#0a0a14;position:re
     <div class="btd-side-actions">
       <button class="btd-btn-ability" id="btdAbilityBtn" title="Ability">☁</button>
       <button class="btd-btn-ff" id="btdFfBtn" title="Fast Forward">▶▶</button>
+    </div>
+  </div>
+
+  <!-- BTD6 Upgrade Panel: 3 paths × 5 tiers -->
+  <div id="btdUpgradePanel" class="hidden side-right">
+    <div class="btd-upg-head">
+      <img id="btdUpgPortrait" alt="">
+      <div class="btd-upg-head-text">
+        <div class="btd-upg-title" id="btdUpgName">Tower</div>
+        <div class="btd-upg-code" id="btdUpgCode">0-0-0</div>
+        <div class="btd-upg-stats" id="btdUpgStats"></div>
+      </div>
+      <button type="button" class="btd-upg-close" id="btdUpgClose" title="Close">✕</button>
+    </div>
+    <div class="btd-upg-paths" id="btdUpgPaths"></div>
+    <div class="btd-upg-foot">
+      <button type="button" class="btd-upg-target" id="btdUpgTarget">TARGET</button>
+      <button type="button" class="btd-upg-sell" id="btdUpgSell">SELL</button>
     </div>
   </div>
 </div>
@@ -465,138 +567,296 @@ const BLOON_TYPES = {
   bad:  { color: '#6a1b9a', hp: 65000, speed: 0.10, children: ['zomg','zomg','ddt','ddt','ddt','moab','moab','moab'], rbe: 55760, cash: 250, radius: 78, moab: true }
 };
 
+// BTD6-style: 3 paths × 5 tiers. Crosspath: only 2 paths, only 1 above T2.
+// costs scale: T1 cheap → T5 late-game expensive
+const U = (name, cost, desc, changes, icon) => ({ name, cost, desc, changes: changes || {}, icon: icon || '⬆️' });
+
 const TOWER_DEFS = {
   dart: {
     name: 'Dart Monkey', icon: '🏹', cost: 200, range: 115, fireRate: 0.75, damage: 1, pierce: 1,
     projSpeed: 400, projType: 'dart', special: null, canPopLead: false, canPopFrozen: true, canPopPurple: true,
-    color: '#66bb6a', spriteSize: 58,
-    upgrades: [
-      { name: 'Sharp Shots', cost: 140, desc: '+1 pierce', changes: { pierce: 1 } },
-      { name: 'Razordarts', cost: 280, desc: '+1 pierce, faster', changes: { pierce: 1, fireRate: -0.1 } },
-      { name: 'Spike-o-pult', cost: 550, desc: 'Hits 5 bloons', changes: { pierce: 3, fireRate: 0.15, projType: 'spike' } }
+    color: '#66bb6a', spriteSize: 58, pathNames: ['Pierce', 'Rapid', 'Vision'],
+    paths: [
+      [ U('Sharp Shots', 140, '+1 pierce', { pierce: 1 }, '📌'),
+        U('Razor Sharp', 220, '+1 pierce', { pierce: 1 }, '🔪'),
+        U('Spike-o-pult', 600, 'Big pierce catapult', { pierce: 4, projType: 'spike', fireRate: 0.12 }, '🏐'),
+        U('Juggernaut', 2800, 'Huge ball, more dmg', { pierce: 6, damage: 2, range: 25 }, '🏀'),
+        U('Ultra-Juggernaut', 18000, 'Shatters into spikes', { pierce: 12, damage: 4, range: 40, aoeRadius: 30 }, '💥') ],
+      [ U('Quick Shots', 100, 'Faster attack', { fireRate: -0.12 }, '⚡'),
+        U('Very Quick Shots', 190, 'Even faster', { fireRate: -0.12 }, '💨'),
+        U('Triple Shot', 700, 'Fires 3 darts', { triple: true, fireRate: 0.05 }, '🔱'),
+        U('Super Fan Club', 8000, 'Buff nearby darts', { fanClub: true, fireRate: -0.08 }, '📣'),
+        U('Plasma Fan Club', 32000, 'Super-fast plasma', { fireRate: -0.15, damage: 1, projType: 'plasma', pierce: 2 }, '🟣') ],
+      [ U('Long Range Darts', 90, '+range', { range: 25 }, '🔭'),
+        U('Enhanced Eyesight', 200, 'See camo + range', { canSeeCamo: true, range: 20 }, '👁️'),
+        U('Crossbow', 650, '+damage +pierce', { damage: 2, pierce: 2 }, '🏹'),
+        U('Sharp Shooter', 3500, 'High damage sniper-darts', { damage: 4, fireRate: -0.1, canPopLead: true }, '🎯'),
+        U('Crossbow Master', 22000, 'Elite camo lead shredder', { damage: 8, pierce: 4, fireRate: -0.15, canSeeCamo: true, canPopLead: true }, '👑') ]
     ]
   },
   sniper: {
     name: 'Sniper Monkey', icon: '🎯', cost: 350, range: 9999, fireRate: 1.55, damage: 2, pierce: 1,
     projSpeed: 2000, projType: 'sniper', special: 'infinite_range', canPopLead: false, canPopFrozen: true, canPopPurple: true,
-    canSeeCamo: true, color: '#43a047', spriteSize: 56,
-    upgrades: [
-      { name: 'Full Metal Jacket', cost: 300, desc: 'Can pop Lead', changes: { canPopLead: true, damage: 1 } },
-      { name: 'Large Calibre', cost: 450, desc: '+2 damage', changes: { damage: 2 } },
-      { name: 'Deadly Precision', cost: 750, desc: 'High damage', changes: { damage: 5, fireRate: -0.15, canPopLead: true } }
+    canSeeCamo: true, color: '#43a047', spriteSize: 56, pathNames: ['Shred', 'Fire Rate', 'Support'],
+    paths: [
+      [ U('Full Metal Jacket', 350, 'Pop Lead + dmg', { canPopLead: true, damage: 1 }, '🔩'),
+        U('Large Calibre', 500, '+2 damage', { damage: 2 }, '🔫'),
+        U('Deadly Precision', 1200, 'Big damage', { damage: 5 }, '☠️'),
+        U('Maim MOAB', 5500, 'Strong vs MOAB', { damage: 4, moabMul: 4 }, '💥'),
+        U('Cripple MOAB', 28000, 'Crush bosses', { damage: 10, moabMul: 10 }, '💣') ],
+      [ U('Night Vision Goggles', 200, 'Faster aim', { fireRate: -0.15 }, '🥽'),
+        U('Shrapnel Shot', 450, '+pierce', { pierce: 2 }, '✨'),
+        U('Bouncing Bullet', 1100, 'More pierce', { pierce: 3, fireRate: -0.1 }, '🔁'),
+        U('Supply Drop', 7000, 'Cash crate each round', { income: 200 }, '📦'),
+        U('Elite Defender', 30000, 'Blazing fire rate', { fireRate: -0.5, damage: 2 }, '🛡️') ],
+      [ U('Fast Firing', 250, 'Attack speed', { fireRate: -0.2 }, '⚡'),
+        U('Even Faster Firing', 400, 'More speed', { fireRate: -0.2 }, '💨'),
+        U('Semi-Automatic', 1500, 'Rapid fire', { fireRate: -0.35 }, '🔫'),
+        U('Full Auto Rifle', 6500, 'Machine sniper', { fireRate: -0.4, damage: 1 }, '🔱'),
+        U('Elite Sniper', 26000, 'Insane DPS', { fireRate: -0.35, damage: 3, pierce: 2 }, '👑') ]
     ]
   },
   ninja: {
     name: 'Ninja Monkey', icon: '🥷', cost: 500, range: 130, fireRate: 0.72, damage: 1, pierce: 1,
     projSpeed: 460, projType: 'shuriken', special: null, canPopLead: false, canPopFrozen: true, canPopPurple: true,
-    canSeeCamo: true, color: '#37474f', spriteSize: 56,
-    upgrades: [
-      { name: 'Ninja Discipline', cost: 280, desc: 'Faster throwing', changes: { fireRate: -0.15 } },
-      { name: 'Sharp Shurikens', cost: 320, desc: '+1 pierce, +range', changes: { pierce: 1, range: 20 } },
-      { name: 'Seeking Shuriken', cost: 850, desc: 'Homes on targets', changes: { seeking: true, pierce: 1 } }
+    canSeeCamo: true, color: '#37474f', spriteSize: 56, pathNames: ['Seek', 'Spam', 'Sabotage'],
+    paths: [
+      [ U('Ninja Discipline', 300, 'Faster throws', { fireRate: -0.12 }, '🥋'),
+        U('Sharp Shurikens', 350, '+pierce', { pierce: 1 }, '⭐'),
+        U('Double Shot', 900, 'Two shurikens', { doubleShot: true }, '✌️'),
+        U('Bloonjitsu', 4000, '5 shurikens', { multiShot: 5 }, '🌀'),
+        U('Grandmaster Ninja', 28000, '8 seeking stars', { multiShot: 8, seeking: true, pierce: 2, fireRate: -0.1 }, '👑') ],
+      [ U('Distraction', 250, 'Slow hit bloons', { glueSlow: 0.15, glueTime: 1.0 }, '😵'),
+        U('Counter-Espionage', 400, 'Range + camo shred', { range: 25 }, '🕵️'),
+        U('Shinobi Tactics', 1200, 'Buff nearby ninjas', { fireRate: -0.15, pierce: 1 }, '🥷'),
+        U('Bloon Sabotage', 5000, 'Global slow pulse', { sabotage: true }, '🛑'),
+        U('Grand Saboteur', 24000, 'Long sabotage + dmg', { sabotage: true, damage: 2, fireRate: -0.1 }, '💀') ],
+      [ U('Seeking Shuriken', 350, 'Homes on target', { seeking: true }, '🎯'),
+        U('Caltrops', 450, 'Extra pierce', { pierce: 2 }, '📌'),
+        U('Flash Bomb', 1100, 'Small AoE stun', { aoeRadius: 28, freezeTime: 0.6 }, '💥'),
+        U('Sticky Bomb', 4500, 'Sticky boom on MOAB', { moabMul: 5, damage: 2 }, '🧨'),
+        U('Master Bomber', 26000, 'Devastating bombs', { aoeRadius: 50, damage: 4, moabMul: 8 }, '💣') ]
     ]
   },
-  // Boat (Buccaneer) — WATER ONLY
   water: {
     name: 'Boat Monkey', icon: '⛵', cost: 500, range: 160, fireRate: 0.85, damage: 1, pierce: 2,
     projSpeed: 360, projType: 'water', special: null, canPopLead: false, canPopFrozen: true, canPopPurple: true,
-    waterOnly: true, color: '#29b6f6', spriteSize: 58,
-    upgrades: [
-      { name: 'Faster Firing', cost: 280, desc: 'Shoot quicker', changes: { fireRate: -0.15 } },
-      { name: 'Grape Shot', cost: 400, desc: '+1 pierce, +range', changes: { pierce: 1, range: 25 } },
-      { name: 'Cannon Ship', cost: 950, desc: 'Small splash', changes: { aoeRadius: 28, damage: 1 } }
+    waterOnly: true, color: '#29b6f6', spriteSize: 58, pathNames: ['Cannon', 'Grape', 'Trade'],
+    paths: [
+      [ U('Faster Shooting', 280, 'Attack speed', { fireRate: -0.12 }, '⚡'),
+        U('Double Shot', 450, 'Twin guns', { doubleShot: true }, '🔫'),
+        U('Destroyer', 1400, 'Rapid naval fire', { fireRate: -0.25, pierce: 1 }, '🚢'),
+        U('Aircraft Carrier', 7000, 'Plane darts', { multiShot: 3, range: 30 }, '✈️'),
+        U('Carrier Flagship', 30000, 'Fleet commander', { multiShot: 5, damage: 2, fireRate: -0.1 }, '🏴‍☠️') ],
+      [ U('Grape Shot', 350, '+pierce range', { pierce: 2, range: 20 }, '🍇'),
+        U('Hot Shot', 500, 'Pop lead', { canPopLead: true, damage: 1 }, '🔥'),
+        U('Cannon Ship', 1200, 'AoE cannon', { aoeRadius: 32, damage: 1 }, '💣'),
+        U('Monkey Pirates', 5500, 'Hook MOABs', { moabMul: 4, aoeRadius: 20 }, '⚓'),
+        U('Pirate Lord', 28000, 'Boss shredder', { moabMul: 10, damage: 3, aoeRadius: 40 }, '👑') ],
+      [ U('Long Range', 200, '+range', { range: 30 }, '🔭'),
+        U('Crow\'s Nest', 350, 'See camo', { canSeeCamo: true, range: 15 }, '🐦'),
+        U('Merchantman', 1500, 'Income / round', { income: 150 }, '💰'),
+        U('Favored Trades', 4500, 'Big income', { income: 300 }, '📈'),
+        U('Trade Empire', 22000, 'Massive income', { income: 700 }, '🏦') ]
     ]
   },
-  // Sub (Monkey Sub) — WATER ONLY
   sub: {
     name: 'Sub Monkey', icon: '🤿', cost: 375, range: 140, fireRate: 0.95, damage: 1, pierce: 1,
     projSpeed: 420, projType: 'water', special: null, canPopLead: false, canPopFrozen: true, canPopPurple: true,
-    waterOnly: true, color: '#fdd835', spriteSize: 56,
-    upgrades: [
-      { name: 'Barbed Darts', cost: 200, desc: '+1 pierce', changes: { pierce: 1 } },
-      { name: 'Twin Guns', cost: 350, desc: 'Faster shots', changes: { fireRate: -0.25 } },
-      { name: 'Ballistic Missile', cost: 900, desc: 'AoE + Lead pop', changes: { aoeRadius: 32, canPopLead: true, damage: 1 } }
+    waterOnly: true, color: '#fdd835', spriteSize: 56, pathNames: ['Dart', 'Intel', 'Armament'],
+    paths: [
+      [ U('Barbed Darts', 180, '+pierce', { pierce: 1 }, '📌'),
+        U('Heat-tipped Darts', 350, 'Pop lead', { canPopLead: true }, '🔥'),
+        U('Ballistic Missile', 1100, 'AoE missiles', { aoeRadius: 30, damage: 1 }, '🚀'),
+        U('First Strike', 6000, 'Heavy missile', { aoeRadius: 45, damage: 3, moabMul: 3 }, '💥'),
+        U('Pre-Emptive Strike', 28000, 'Boss hunter', { aoeRadius: 55, damage: 6, moabMul: 8 }, '☢️') ],
+      [ U('Advanced Intel', 250, '+range', { range: 35 }, '📡'),
+        U('Submerge', 400, 'Faster + camo', { fireRate: -0.15, canSeeCamo: true }, '🌊'),
+        U('Bloontonium Reactor', 1400, 'Slow nearby', { arctic: true, range: 20 }, '🔵'),
+        U('Armor Piercing', 5000, 'Pierce + dmg', { pierce: 3, damage: 2 }, '🛡️'),
+        U('Energizer', 24000, 'Buff all subs', { fireRate: -0.2, damage: 2, pierce: 2 }, '⚡') ],
+      [ U('Twin Guns', 300, 'Double shot', { doubleShot: true }, '🔫'),
+        U('Airburst Darts', 500, 'Pierce splash', { pierce: 2, aoeRadius: 18 }, '💫'),
+        U('Triple Guns', 1300, 'Triple fire', { multiShot: 3 }, '🔱'),
+        U('Ops Sub', 5500, 'Fast triple', { multiShot: 3, fireRate: -0.2, damage: 1 }, '🎖️'),
+        U('Final Harmonic', 26000, 'Overcharged guns', { multiShot: 5, fireRate: -0.15, damage: 2 }, '👑') ]
     ]
   },
   boomer: {
     name: 'Boomerang', icon: '🪃', cost: 325, range: 120, fireRate: 1.05, damage: 1, pierce: 2,
     projSpeed: 320, projType: 'boomerang', special: null, canPopLead: false, canPopFrozen: true, canPopPurple: true,
-    color: '#8d6e63', spriteSize: 56,
-    upgrades: [
-      { name: 'Improved Rangs', cost: 200, desc: '+1 pierce', changes: { pierce: 1 } },
-      { name: 'Glaives', cost: 320, desc: 'Slightly faster', changes: { fireRate: -0.12 } },
-      { name: 'Ricochet', cost: 700, desc: '+3 pierce', changes: { pierce: 3, range: 15 } }
+    color: '#8d6e63', spriteSize: 56, pathNames: ['Glaives', 'Speed', 'Red Hot'],
+    paths: [
+      [ U('Improved Rangs', 200, '+pierce', { pierce: 1 }, '🪃'),
+        U('Glaives', 320, 'Better pierce', { pierce: 2 }, '⚙️'),
+        U('Glaive Ricochet', 1100, 'Bounces more', { pierce: 5 }, '🔁'),
+        U('MOAB Press', 4500, 'Strong vs MOAB', { moabMul: 4, damage: 1 }, '💥'),
+        U('Glaive Dominus', 30000, 'Orbiting death', { pierce: 15, damage: 3, multiShot: 3, fireRate: -0.1 }, '👑') ],
+      [ U('Faster Throwing', 175, 'Attack speed', { fireRate: -0.12 }, '⚡'),
+        U('Faster Rangs', 280, 'More speed', { fireRate: -0.12 }, '💨'),
+        U('Bionic Boomerang', 1200, 'Cyber arms', { fireRate: -0.2, pierce: 1 }, '🤖'),
+        U('Turbo Charge', 4000, 'Burst speed', { fireRate: -0.25, damage: 1 }, '🔋'),
+        U('Perma Charge', 22000, 'Permanent turbo', { fireRate: -0.3, pierce: 2, damage: 2 }, '♾️') ],
+      [ U('Long Range Rangs', 150, '+range', { range: 30 }, '🔭'),
+        U('Red Hot Rangs', 300, 'Pop lead', { canPopLead: true }, '🔥'),
+        U('Kylie Boomerang', 1300, 'Heavy rang', { damage: 2, pierce: 2 }, '🪃'),
+        U('MOAB Domination', 5000, 'Boss crush', { moabMul: 5, damage: 2 }, '💀'),
+        U('MOAB Eliminator', 26000, 'Delete bosses', { moabMul: 12, damage: 5, pierce: 3 }, '☠️') ]
     ]
   },
   glue: {
     name: 'Glue Gunner', icon: '🧪', cost: 275, range: 100, fireRate: 1.25, damage: 0, pierce: 1,
     projSpeed: 300, projType: 'glue', special: 'glue', glueSlow: 0.55, glueTime: 2.8,
     canPopLead: false, canPopFrozen: true, canPopPurple: true,
-    color: '#9ccc65', spriteSize: 56,
-    upgrades: [
-      { name: 'Stickier Glue', cost: 180, desc: 'Slower & longer', changes: { glueSlow: 0.12, glueTime: 1.2 } },
-      { name: 'Glue Soak', cost: 300, desc: '+1 pierce', changes: { pierce: 1 } },
-      { name: 'Corrosive Glue', cost: 650, desc: 'Damages bloons', changes: { damage: 1, pierce: 1 } }
+    color: '#9ccc65', spriteSize: 56, pathNames: ['Soak', 'Corrode', 'Splash'],
+    paths: [
+      [ U('Glue Soak', 200, '+pierce', { pierce: 1 }, '💧'),
+        U('Corrosive Glue', 350, 'Deals damage', { damage: 1 }, '☠️'),
+        U('Bloon Dissolver', 1400, 'Strong melt', { damage: 2, pierce: 1 }, '🧪'),
+        U('Bloon Liquefier', 5500, 'Heavy DoT', { damage: 3, pierce: 2 }, '🟢'),
+        U('The Bloon Solver', 28000, 'Melts MOABs', { damage: 6, pierce: 4, moabMul: 3 }, '👑') ],
+      [ U('Stickier Glue', 180, 'Longer slow', { glueTime: 1.5, glueSlow: 0.1 }, '🧷'),
+        U('Stronger Glue', 300, 'Stronger slow', { glueSlow: 0.12 }, '🐢'),
+        U('MOAB Glue', 1600, 'Slows MOABs', { glueMoab: true, glueTime: 1 }, '🟣'),
+        U('Relentless Glue', 4500, 'Permanent slow stacks', { glueSlow: 0.1, glueTime: 3 }, '♾️'),
+        U('Super Glue', 22000, 'Freeze-like glue', { glueSlow: 0.25, glueTime: 5, freezeTime: 0.8 }, '🧊') ],
+      [ U('Bigger Globs', 160, 'AoE glue', { aoeRadius: 22 }, '💦'),
+        U('Glue Splatter', 320, 'Bigger AoE', { aoeRadius: 18, pierce: 2 }, '🌀'),
+        U('Glue Hose', 1200, 'Fast spray', { fireRate: -0.3, pierce: 2 }, '🚿'),
+        U('Glue Strike', 5000, 'Map-wide slow pulse', { sabotage: true }, '📡'),
+        U('Glue Storm', 24000, 'Storm of glue', { sabotage: true, aoeRadius: 40, pierce: 5 }, '⛈️') ]
     ]
   },
   bomb: {
     name: 'Bomb Shooter', icon: '💣', cost: 525, range: 125, fireRate: 1.25, damage: 1, pierce: 1,
     projSpeed: 270, projType: 'bomb', special: 'aoe', aoeRadius: 36, canPopLead: true, canPopFrozen: true, canPopPurple: true,
-    color: '#78909c', spriteSize: 56,
-    upgrades: [
-      { name: 'Bigger Bombs', cost: 320, desc: '+AoE radius', changes: { aoeRadius: 16 } },
-      { name: 'Heavy Bombs', cost: 550, desc: '+1 AoE damage', changes: { damage: 1 } },
-      { name: 'MOAB Mauler', cost: 900, desc: '8x vs MOAB', changes: { moabMul: 8, damage: 1 } }
+    color: '#78909c', spriteSize: 56, pathNames: ['Blast', 'Missile', 'Frag'],
+    paths: [
+      [ U('Bigger Bombs', 300, '+AoE', { aoeRadius: 14 }, '💥'),
+        U('Heavy Bombs', 500, '+damage', { damage: 1 }, '💣'),
+        U('Really Big Bombs', 1400, 'Huge blast', { aoeRadius: 22, damage: 1 }, '🔵'),
+        U('Bloon Impact', 4500, 'Stun + dmg', { freezeTime: 0.8, damage: 2 }, '💫'),
+        U('Bloon Crush', 28000, 'Crush everything', { aoeRadius: 50, damage: 5, freezeTime: 1.2 }, '👑') ],
+      [ U('Faster Reload', 250, 'Attack speed', { fireRate: -0.15 }, '⚡'),
+        U('Missile Launcher', 400, 'Faster missiles', { fireRate: -0.15, range: 20 }, '🚀'),
+        U('MOAB Mauler', 1200, '8x vs MOAB', { moabMul: 8 }, '🎯'),
+        U('MOAB Assassin', 5000, '12x vs MOAB', { moabMul: 12, damage: 2 }, '☠️'),
+        U('MOAB Eliminator', 30000, 'Delete bosses', { moabMul: 20, damage: 4, aoeRadius: 30 }, '☢️') ],
+      [ U('Extra Range', 200, '+range', { range: 25 }, '🔭'),
+        U('Frag Bombs', 350, 'Shrapnel pierce', { pierce: 3 }, '✨'),
+        U('Cluster Bombs', 1300, 'Cluster AoE', { aoeRadius: 20, damage: 1 }, '🎆'),
+        U('Recursive Cluster', 4800, 'Double cluster', { aoeRadius: 28, damage: 2, pierce: 2 }, '🔁'),
+        U('Bomb Blitz', 26000, 'Screen wipe on leak threat', { aoeRadius: 60, damage: 4, fireRate: -0.15 }, '🌪️') ]
     ]
   },
   ice: {
     name: 'Ice Monkey', icon: '❄️', cost: 300, range: 75, fireRate: 2.0, damage: 0, pierce: 99,
     projSpeed: 0, projType: 'freeze', special: 'freeze', freezeTime: 1.2, canPopLead: false, canPopFrozen: true, canPopPurple: true,
-    color: '#4fc3f7', spriteSize: 56,
-    upgrades: [
-      { name: 'Enhanced Freeze', cost: 200, desc: 'Freeze 2s', changes: { freezeTime: 0.8 } },
-      { name: 'Permafrost', cost: 400, desc: 'Slow after thaw', changes: { permafrost: true } },
-      { name: 'Arctic Wind', cost: 1800, desc: 'Bigger slow aura', changes: { range: 45, arctic: true, freezeTime: 0.4 } }
+    color: '#4fc3f7', spriteSize: 56, pathNames: ['Perma', 'Deep Freeze', 'Icicles'],
+    paths: [
+      [ U('Permafrost', 200, 'Slow after thaw', { permafrost: true }, '🧊'),
+        U('Metal Freeze', 350, 'Freeze lead', { canPopLead: true }, '⚙️'),
+        U('Ice Shards', 1200, 'Damage on freeze', { damage: 1 }, '💎'),
+        U('Snowstorm', 4500, 'Big freeze', { range: 40, freezeTime: 1 }, '🌨️'),
+        U('Absolute Zero', 24000, 'Map freeze pulse', { arctic: true, freezeTime: 2, range: 60, damage: 2 }, '❄️') ],
+      [ U('Enhanced Freeze', 180, 'Longer freeze', { freezeTime: 0.8 }, '⏱️'),
+        U('Deep Freeze', 320, 'Even longer', { freezeTime: 0.8 }, '🧊'),
+        U('Arctic Wind', 1400, 'Permanent slow aura', { arctic: true, range: 30 }, '🌬️'),
+        U('Snowstorm Aura', 5000, 'Wide arctic', { arctic: true, range: 50, freezeTime: 0.5 }, '🌪️'),
+        U('Icicle Impale', 28000, 'Impale MOABs', { damage: 8, moabMul: 6, canPopLead: true }, '🗡️') ],
+      [ U('Larger Radius', 150, '+range', { range: 20 }, '⭕'),
+        U('Re-Freeze', 280, 'Faster reapply', { fireRate: -0.4 }, '🔁'),
+        U('Cryo Cannon', 1300, 'Damaging ice', { damage: 2, fireRate: -0.2 }, '🔫'),
+        U('Icicles', 4500, 'Pierce shards', { damage: 2, pierce: 5, projType: 'ice' }, '💠'),
+        U('Icicle Impaler', 26000, 'Shatter armies', { damage: 5, pierce: 12, range: 40 }, '👑') ]
     ]
   },
   wizard: {
     name: 'Wizard Monkey', icon: '🔮', cost: 450, range: 130, fireRate: 0.9, damage: 1, pierce: 1,
     projSpeed: 340, projType: 'magic', special: null, canPopLead: true, canPopFrozen: true, canPopPurple: false,
-    color: '#9c27b0', spriteSize: 58,
-    upgrades: [
-      { name: 'Fireball', cost: 320, desc: 'Occasional AoE', changes: { fireball: true } },
-      { name: 'Wall of Fire', cost: 550, desc: 'Fire on path', changes: { wallOfFire: true } },
-      { name: 'Arcane Mastery', cost: 1100, desc: 'Faster + pierce', changes: { fireRate: -0.3, pierce: 2, range: 25 } }
+    color: '#9c27b0', spriteSize: 58, pathNames: ['Fire', 'Arcane', 'Necro'],
+    paths: [
+      [ U('Fireball', 300, 'AoE fireballs', { fireball: true }, '🔥'),
+        U('Wall of Fire', 500, 'Fire on path', { wallOfFire: true }, '🧱'),
+        U('Dragon\'s Breath', 1400, 'Faster fire', { fireRate: -0.2, damage: 1 }, '🐉'),
+        U('Summon Phoenix', 6000, 'Phoenix bursts', { multiShot: 2, aoeRadius: 25 }, '🐦'),
+        U('Wizard Lord Phoenix', 32000, 'Inferno lord', { multiShot: 3, damage: 3, fireball: true, fireRate: -0.15 }, '👑') ],
+      [ U('Intense Magic', 250, '+pierce', { pierce: 2 }, '✨'),
+        U('Monkey Sense', 350, 'See camo', { canSeeCamo: true }, '👁️'),
+        U('Shimmer', 1200, 'Decamo + range', { range: 30, canSeeCamo: true }, '🌟'),
+        U('Necromancer', 5000, 'Undead army aid', { income: 80, damage: 1 }, '💀'),
+        U('Prince of Darkness', 28000, 'Dark army', { damage: 4, pierce: 4, fireRate: -0.15 }, '🦇') ],
+      [ U('Guided Magic', 200, 'Seeking bolts', { seeking: true }, '🎯'),
+        U('Arcane Blast', 400, '+damage', { damage: 1 }, '💜'),
+        U('Arcane Mastery', 1300, 'Speed + pierce', { fireRate: -0.25, pierce: 2, range: 25 }, '📖'),
+        U('Arcane Spike', 5000, 'High damage', { damage: 4, pierce: 2 }, '🗡️'),
+        U('Archmage', 30000, 'Ultimate mage', { damage: 6, pierce: 5, fireRate: -0.2, canPopPurple: true }, '🧙') ]
     ]
   },
   farm: {
     name: 'Banana Farm', icon: '🍌', cost: 1000, range: 0, fireRate: 0, damage: 0, pierce: 0,
     projSpeed: 0, projType: 'none', special: 'income', income: 60, canPopLead: false, canPopFrozen: false, canPopPurple: false,
-    color: '#fbc02d', spriteSize: 56,
-    upgrades: [
-      { name: 'More Bananas', cost: 350, desc: '$100 / round', changes: { income: 40 } },
-      { name: 'Banana Plantation', cost: 700, desc: '$160 / round', changes: { income: 60 } },
-      { name: 'Banana Republic', cost: 1400, desc: '$280 / round', changes: { income: 120 } }
+    color: '#fbc02d', spriteSize: 56, pathNames: ['Banana', 'Value', 'Bank'],
+    paths: [
+      [ U('Increased Production', 350, '+$40 / round', { income: 40 }, '🍌'),
+        U('Greater Production', 500, '+$50 / round', { income: 50 }, '🌴'),
+        U('Banana Plantation', 1800, '+$120 / round', { income: 120 }, '🏞️'),
+        U('Banana Research', 7000, '+$250 / round', { income: 250 }, '🔬'),
+        U('Banana Central', 35000, '+$800 / round', { income: 800 }, '🏢') ],
+      [ U('Long Life Bananas', 300, '+$30 / round', { income: 30 }, '⏳'),
+        U('Valuable Bananas', 450, '+$50 / round', { income: 50 }, '💎'),
+        U('Monkey Bank', 2200, 'Bank interest', { income: 180 }, '🏦'),
+        U('IMF Loan', 6500, 'Big payouts', { income: 350 }, '💳'),
+        U('Monkey-Nomics', 32000, 'Economy broken', { income: 900 }, '📈') ],
+      [ U('EZ Collect', 250, '+$25 / round', { income: 25 }, '✋'),
+        U('Banana Salvage', 400, '+$40 / round', { income: 40 }, '♻️'),
+        U('Marketplace', 1600, '+$100 / round', { income: 100 }, '🛒'),
+        U('BRF', 5500, '+$220 / round', { income: 220 }, '🏭'),
+        U('Banana Research Facility', 30000, '+$700 / round', { income: 700 }, '🏗️') ]
     ]
   },
   super: {
     name: 'Super Monkey', icon: '🦸', cost: 2800, range: 160, fireRate: 0.12, damage: 1, pierce: 1,
     projSpeed: 580, projType: 'laser', special: null, canPopLead: false, canPopFrozen: false, canPopPurple: true,
-    color: '#e53935', spriteSize: 58,
-    upgrades: [
-      { name: 'Laser Blasts', cost: 2200, desc: 'Pop frozen', changes: { canPopFrozen: true, projType: 'laser', damage: 1 } },
-      { name: 'Plasma Blasts', cost: 3500, desc: '+2 pierce', changes: { pierce: 2, fireRate: -0.02, projType: 'plasma' } },
-      { name: 'Sun Avatar', cost: 6500, desc: '3 beams', changes: { sunAvatar: true, damage: 1, pierce: 1, fireRate: -0.02 } }
+    color: '#e53935', spriteSize: 58, pathNames: ['Laser', 'Plasma', 'Dark'],
+    paths: [
+      [ U('Laser Blasts', 2000, 'Pop frozen', { canPopFrozen: true, damage: 1 }, '🔴'),
+        U('Plasma Blasts', 3500, '+pierce plasma', { pierce: 2, projType: 'plasma', fireRate: -0.02 }, '🟢'),
+        U('Sun Avatar', 12000, '3 sun beams', { sunAvatar: true, damage: 1, pierce: 1 }, '☀️'),
+        U('Sun Temple', 50000, 'Temple power', { damage: 3, pierce: 3, multiShot: 3, range: 40 }, '🛕'),
+        U('True Sun God', 120000, 'Godlike beams', { damage: 8, pierce: 6, multiShot: 5, fireRate: -0.03 }, '👑') ],
+      [ U('Super Range', 1000, '+range', { range: 40 }, '🔭'),
+        U('Epic Range', 1500, 'More range', { range: 40 }, '📡'),
+        U('Robo Monkey', 9000, 'Twin arms', { doubleShot: true, fireRate: -0.02 }, '🤖'),
+        U('Tech Terror', 35000, 'Tech plasma', { pierce: 4, damage: 2, aoeRadius: 25 }, '💀'),
+        U('The Anti-Bloon', 90000, 'Delete bloons', { damage: 10, pierce: 8, moabMul: 5 }, '☠️') ],
+      [ U('Knockback', 1200, 'Slow on hit', { glueSlow: 0.1, glueTime: 0.8 }, '↩️'),
+        U('Ultravision', 1600, 'See camo', { canSeeCamo: true, range: 20 }, '👁️'),
+        U('Dark Knight', 8000, 'Dark power', { damage: 2, pierce: 2, canPopLead: true }, '🖤'),
+        U('Dark Champion', 30000, 'Champion DPS', { damage: 3, pierce: 3, fireRate: -0.03 }, '⚔️'),
+        U('Legend of the Night', 100000, 'Night legend', { damage: 6, pierce: 5, canSeeCamo: true, canPopLead: true, fireRate: -0.04 }, '🌙') ]
     ]
   },
   tack: {
     name: 'Tack Shooter', icon: '📌', cost: 280, range: 65, fireRate: 1.15, damage: 1, pierce: 1,
     projSpeed: 280, projType: 'tack', special: 'radial', tackCount: 8, canPopLead: false, canPopFrozen: true, canPopPurple: true,
-    color: '#90a4ae', spriteSize: 56,
-    upgrades: [
-      { name: 'Faster Shooting', cost: 200, desc: '+35% speed', changes: { fireRate: -0.25 } },
-      { name: 'Extra Range Tacks', cost: 250, desc: '+range, 10 tacks', changes: { range: 18, tackCount: 2 } },
-      { name: 'Tack Sprayer', cost: 480, desc: '14 tacks', changes: { tackCount: 4, fireRate: -0.1 } }
+    color: '#90a4ae', spriteSize: 56, pathNames: ['Blade', 'Speed', 'Ring'],
+    paths: [
+      [ U('More Tacks', 150, '10 tacks', { tackCount: 2 }, '📌'),
+        U('Even More Tacks', 250, '12 tacks', { tackCount: 2 }, '⭐'),
+        U('Tack Sprayer', 550, '16 tacks', { tackCount: 4, fireRate: -0.08 }, '🌀'),
+        U('Overdrive', 3500, 'Fast spray', { fireRate: -0.3, tackCount: 2 }, '⚙️'),
+        U('The Tack Zone', 22000, 'Tack storm', { tackCount: 8, fireRate: -0.25, pierce: 2, range: 25 }, '👑') ],
+      [ U('Faster Shooting', 175, 'Attack speed', { fireRate: -0.18 }, '⚡'),
+        U('Even Faster', 280, 'More speed', { fireRate: -0.15 }, '💨'),
+        U('Hot Shots', 700, 'Pop lead', { canPopLead: true, damage: 1 }, '🔥'),
+        U('Ring of Fire', 4000, 'Fire ring', { aoeRadius: 40, damage: 1, wallOfFire: true }, '⭕'),
+        U('Inferno Ring', 26000, 'Inferno zone', { aoeRadius: 55, damage: 3, fireRate: -0.2 }, '🔥') ],
+      [ U('Long Range Tacks', 125, '+range', { range: 18 }, '🔭'),
+        U('Super Range Tacks', 220, 'More range', { range: 18 }, '📡'),
+        U('Blade Shooter', 800, 'Blade pierce', { pierce: 2, damage: 1 }, '🗡️'),
+        U('Blade Maelstrom', 3800, 'Blade storm', { pierce: 3, tackCount: 4, fireRate: -0.15 }, '🌪️'),
+        U('Super Maelstrom', 24000, 'Permanent blades', { pierce: 5, tackCount: 8, damage: 2, fireRate: -0.2 }, '⚔️') ]
     ]
   }
 };
@@ -990,8 +1250,11 @@ function createTower(type, x, y) {
     income: def.income || 0, tackCount: def.tackCount || 8, moabMul: 1,
     glueSlow: def.glueSlow || 0.5, glueTime: def.glueTime || 3,
     fireball: false, wallOfFire: false, arctic: false, permafrost: false, sunAvatar: false,
-    seeking: !!def.seeking,
-    upgradeLevel: 0, targeting: 'first',
+    seeking: !!def.seeking, triple: false, doubleShot: false, multiShot: 0,
+    fanClub: false, sabotage: false, glueMoab: false,
+    // BTD6 paths: [top, mid, bot] tiers 0–5
+    paths: [0, 0, 0],
+    targeting: 'first',
     cooldown: 0, angle: 0, aimAngle: 0, totalCost: def.cost,
     shootKick: 0, shootFlash: 0, wallCD: 0, spriteSize: def.spriteSize || 52
   };
@@ -1002,29 +1265,50 @@ function lerpAngle(a, b, t) {
   while (d < -Math.PI) d += Math.PI * 2;
   return a + d * t;
 }
-// Towers that rotate to face bloons (not farm; tack is omnidirectional)
 function towerCanAim(type) {
   return type !== 'farm' && type !== 'tack';
 }
-function applyUpgrade(tower) {
+function pathCode(tower) {
+  const p = tower.paths || [0, 0, 0];
+  return p[0] + '-' + p[1] + '-' + p[2];
+}
+function pathTotal(tower) {
+  const p = tower.paths || [0, 0, 0];
+  return p[0] + p[1] + p[2];
+}
+/** BTD6 crosspath: only 2 paths used; only one path may exceed tier 2. */
+function canUpgradePath(tower, pathIdx) {
   const def = TOWER_DEFS[tower.type];
-  if (tower.upgradeLevel >= 3) return false;
-  const up = def.upgrades[tower.upgradeLevel];
-  if (cash < up.cost) return false;
-  cash -= up.cost; totalSpent += up.cost; tower.totalCost += up.cost; tower.upgradeLevel++;
-  const c = up.changes;
+  if (!def || !def.paths) return false;
+  const p = tower.paths;
+  if (p[pathIdx] >= 5) return false;
+  if (p[pathIdx] >= def.paths[pathIdx].length) return false;
+  const used = p.map((v, i) => (v > 0 ? i : -1)).filter(i => i >= 0);
+  // third path locked if two already started and this is the third
+  if (p[pathIdx] === 0 && used.length >= 2 && used.indexOf(pathIdx) < 0) return false;
+  // only one path above T2
+  if (p[pathIdx] >= 2) {
+    for (let i = 0; i < 3; i++) {
+      if (i !== pathIdx && p[i] > 2) return false;
+    }
+  }
+  return true;
+}
+function applyPathChanges(tower, c) {
+  if (!c) return;
   if (c.pierce) tower.pierce += c.pierce;
   if (c.damage) tower.damage += c.damage;
-  if (c.fireRate) tower.fireRate = Math.max(0.04, tower.fireRate + c.fireRate);
+  if (c.fireRate) tower.fireRate = Math.max(0.03, tower.fireRate + c.fireRate);
   if (c.range) tower.range += c.range;
-  if (c.aoeRadius) tower.aoeRadius += c.aoeRadius;
-  if (c.freezeTime) tower.freezeTime += c.freezeTime;
-  if (c.income) tower.income += c.income;
-  if (c.tackCount) tower.tackCount += c.tackCount;
-  if (c.moabMul) tower.moabMul = c.moabMul;
+  if (c.aoeRadius) tower.aoeRadius = (tower.aoeRadius || 0) + c.aoeRadius;
+  if (c.freezeTime) tower.freezeTime = (tower.freezeTime || 0) + c.freezeTime;
+  if (c.income) tower.income = (tower.income || 0) + c.income;
+  if (c.tackCount) tower.tackCount = (tower.tackCount || 8) + c.tackCount;
+  if (c.moabMul) tower.moabMul = Math.max(tower.moabMul || 1, c.moabMul);
   if (c.canPopLead) tower.canPopLead = true;
   if (c.canPopFrozen) tower.canPopFrozen = true;
-  // water/sub aoe upgrades keep projType
+  if (c.canSeeCamo) tower.canSeeCamo = true;
+  if (c.canPopPurple) tower.canPopPurple = true;
   if (c.projType) tower.projType = c.projType;
   if (c.fireball) tower.fireball = true;
   if (c.wallOfFire) tower.wallOfFire = true;
@@ -1032,11 +1316,31 @@ function applyUpgrade(tower) {
   if (c.arctic) tower.arctic = true;
   if (c.sunAvatar) tower.sunAvatar = true;
   if (c.seeking) tower.seeking = true;
-  if (c.glueSlow) tower.glueSlow = Math.max(0.15, (tower.glueSlow || 0.5) - c.glueSlow);
-  if (c.glueTime) tower.glueTime = (tower.glueTime || 3) + c.glueTime;
+  if (c.triple) tower.triple = true;
+  if (c.doubleShot) tower.doubleShot = true;
+  if (c.multiShot) tower.multiShot = Math.max(tower.multiShot || 0, c.multiShot);
+  if (c.fanClub) tower.fanClub = true;
+  if (c.sabotage) tower.sabotage = true;
+  if (c.glueMoab) tower.glueMoab = true;
+  if (c.glueSlow) tower.glueSlow = Math.max(0.12, (tower.glueSlow || 0.55) - c.glueSlow);
+  if (c.glueTime) tower.glueTime = (tower.glueTime || 2.8) + c.glueTime;
   if (c.special) tower.special = c.special;
+  // visual power growth
+  const top = Math.max(tower.paths[0], tower.paths[1], tower.paths[2]);
+  tower.spriteSize = (TOWER_DEFS[tower.type].spriteSize || 52) + top * 2 + (top >= 5 ? 6 : 0);
+}
+function applyUpgrade(tower, pathIdx) {
+  const def = TOWER_DEFS[tower.type];
+  if (!canUpgradePath(tower, pathIdx)) return false;
+  const tier = tower.paths[pathIdx]; // next tier index 0..4
+  const up = def.paths[pathIdx][tier];
+  if (!up || cash < up.cost) return false;
+  cash -= up.cost; totalSpent += up.cost; tower.totalCost += up.cost;
+  tower.paths[pathIdx]++;
+  applyPathChanges(tower, up.changes);
   sfx('upgrade');
-  spawnSpriteAnim('fx_magic_', 6, tower.x, tower.y, 60, 14);
+  spawnSpriteAnim('fx_magic_', 6, tower.x, tower.y, 50 + pathTotal(tower) * 8, 14);
+  if (typeof renderBtdUpgradePanel === 'function') renderBtdUpgradePanel();
   return true;
 }
 function getTarget(tower) {
@@ -1086,11 +1390,20 @@ function fireTower(tower, target) {
   const my = tower.y + Math.sin(aim) * 22;
   spawnParticles(mx, my, '#fff59d', 4, 60);
 
+  if (tower.sabotage && Math.random() < 0.15) {
+    for (const b of bloons) {
+      if (!b.alive || BLOON_TYPES[b.type].moab) continue;
+      b.glueSlow = Math.min(b.glueSlow || 1, 0.55);
+      b.glueTime = Math.max(b.glueTime || 0, 2.5);
+    }
+  }
   if (tower.special === 'freeze' || tower.projType === 'freeze') {
     for (const b of bloons) {
       if (!b.alive) continue;
-      if (dist2(tower.x, tower.y, b.x, b.y) <= tower.range * tower.range)
+      if (dist2(tower.x, tower.y, b.x, b.y) <= tower.range * tower.range) {
         freezeBloon(b, tower.freezeTime, tower.permafrost, tower.arctic);
+        if (tower.damage > 0) damageBloon(b, tower.damage, tower);
+      }
     }
     spawnFreezeFx(tower.x, tower.y, tower.range * 0.6);
     sfx('freeze');
@@ -1105,25 +1418,29 @@ function fireTower(tower, target) {
     tower.shootKick = 0.6;
     return;
   }
-  if (tower.sunAvatar) {
-    for (let i = -1; i <= 1; i++) {
-      const a = tower.angle + i * 0.25;
-      projectiles.push(makeProj(tower, tower.x, tower.y, Math.cos(a)*tower.projSpeed, Math.sin(a)*tower.projSpeed, target));
-    }
-    return;
-  }
+  const shotCount = tower.multiShot > 0 ? tower.multiShot
+    : (tower.sunAvatar ? 3 : (tower.triple ? 3 : (tower.doubleShot ? 2 : 1)));
   if (tower.projType === 'sniper') {
-    damageBloon(target, tower.damage, tower);
+    for (let s = 0; s < shotCount; s++) {
+      damageBloon(target, tower.damage, tower);
+    }
     particles.push({ x: tower.x, y: tower.y, x2: target.x, y2: target.y, life: 0.08, maxLife: 0.08, color: '#fff59d', type: 'line' });
     return;
   }
   const isHoming = ['magic','laser','plasma'].includes(tower.projType) || !!tower.seeking;
   const d = dist(tower.x, tower.y, target.x, target.y) || 1;
-  const vx = (target.x - tower.x) / d * tower.projSpeed;
-  const vy = (target.y - tower.y) / d * tower.projSpeed;
-  projectiles.push(makeProj(tower, tower.x, tower.y, vx, vy, isHoming ? target : null));
+  const baseVx = (target.x - tower.x) / d * tower.projSpeed;
+  const baseVy = (target.y - tower.y) / d * tower.projSpeed;
+  const spread = shotCount > 1 ? 0.18 : 0;
+  for (let s = 0; s < shotCount; s++) {
+    const off = shotCount === 1 ? 0 : (s - (shotCount - 1) / 2) * spread;
+    const ca = Math.cos(off), sa = Math.sin(off);
+    const vx = baseVx * ca - baseVy * sa;
+    const vy = baseVx * sa + baseVy * ca;
+    projectiles.push(makeProj(tower, tower.x, tower.y, vx, vy, isHoming ? target : null));
+  }
   if (tower.fireball && Math.random() < 0.25) {
-    const p = makeProj(tower, tower.x, tower.y, vx*0.8, vy*0.8, target);
+    const p = makeProj(tower, tower.x, tower.y, baseVx*0.8, baseVy*0.8, target);
     p.projType = 'fireball'; p.aoeRadius = 50; p.damage = tower.damage + 2;
     projectiles.push(p);
   }
@@ -1622,12 +1939,23 @@ function updateGameplay(t, diff) {
           }
           spawnExplosion(p.x, p.y, ar); sfx(p.projType === 'water' ? 'pop' : 'explode'); hit = true; break;
         } else if (p.projType === 'glue') {
-          // Slow (and optional damage) — does not pop MOABs hard
-          if (!BLOON_TYPES[b.type].moab) {
+          const isMoab = !!BLOON_TYPES[b.type].moab;
+          if (!isMoab || p.source && p.source.glueMoab) {
             b.glueSlow = Math.min(b.glueSlow || 1, p.glueSlow || 0.5);
             b.glueTime = Math.max(b.glueTime || 0, p.glueTime || 3);
           }
           if (p.damage > 0) damageBloon(b, p.damage, p);
+          if (p.aoeRadius > 0) {
+            for (const b2 of bloons) {
+              if (!b2.alive || b2 === b) continue;
+              if (dist2(p.x, p.y, b2.x, b2.y) < p.aoeRadius * p.aoeRadius) {
+                if (!BLOON_TYPES[b2.type].moab || (p.source && p.source.glueMoab)) {
+                  b2.glueSlow = Math.min(b2.glueSlow || 1, p.glueSlow || 0.5);
+                  b2.glueTime = Math.max(b2.glueTime || 0, p.glueTime || 3);
+                }
+              }
+            }
+          }
           p.pierce--;
           if (p.pierce <= 0) { hit = true; break; }
         } else {
@@ -1656,7 +1984,7 @@ canvas.addEventListener('mousedown', e => {
   if (e.button === 2) {
     // Right-click cancels placement / deselects tower
     if (placingTower) { placingTower = null; updateSidebarDock(); sfx('click'); }
-    else if (selectedTower) { selectedTower = null; sfx('click'); }
+    else if (selectedTower) { selectedTower = null; if (typeof renderBtdUpgradePanel === 'function') renderBtdUpgradePanel(); sfx('click'); }
     return;
   }
   mouse.clicked = true;
@@ -1718,30 +2046,9 @@ function handleClick() {
       }
       if (hitBtn(W - hudPad - 290, 8, 70, 36)) { autoStart = !autoStart; sfx('click'); return; }
     }
-    // Tower pick: BTD sidebar (DOM) + upgrade panel
+    // Upgrade panel is DOM — ignore canvas clicks under it when open
     if (selectedTower) {
-      const px = towerPanelX(), py = 60;
-      for (let u = 0; u < 3; u++) {
-        if (hitBtn(px + 10, py + 160 + u * 55, 230, 50)) {
-          if (selectedTower.upgradeLevel === u) applyUpgrade(selectedTower);
-          return;
-        }
-      }
-      if (hitBtn(px + 10, py + 330, 230, 30)) {
-        const modes = ['first','last','strong','close'];
-        selectedTower.targeting = modes[(modes.indexOf(selectedTower.targeting)+1)%4];
-        sfx('click'); return;
-      }
-      if (hitBtn(px + 10, py + 370, 110, 35)) {
-        const val = Math.floor(selectedTower.totalCost * 0.7);
-        cash += val;
-        const idx = towers.indexOf(selectedTower);
-        if (idx >= 0) towers.splice(idx, 1);
-        spawnFloat(selectedTower.x, selectedTower.y, '+$' + val, '#4caf50');
-        selectedTower = null; sfx('sell'); return;
-      }
-      if (hitBtn(px + 130, py + 370, 110, 35)) { selectedTower = null; sfx('click'); return; }
-      if (hitBtn(px, py, 250, 420)) return;
+      // keep selection; upgrades via DOM panel
     }
     if (placingTower) {
       // Ignore clicks on sidebar strip
@@ -1765,6 +2072,7 @@ function handleClick() {
     let found = null;
     for (const t of towers) if (dist(mx, my, t.x, t.y) < 28) { found = t; break; }
     selectedTower = found;
+    if (typeof renderBtdUpgradePanel === 'function') renderBtdUpgradePanel();
   }
 }
 
@@ -1952,10 +2260,21 @@ function drawTower(t, preview) {
     ctx.restore();
   }
 
-  if (t.upgradeLevel > 0) {
+  const pt = pathTotal(t);
+  if (pt > 0) {
     ctx.fillStyle = '#ffd700';
-    ctx.font = '11px Arial'; ctx.textAlign = 'center';
-    ctx.fillText('★'.repeat(t.upgradeLevel), t.x, t.y + size * 0.48);
+    ctx.font = 'bold 11px Arial'; ctx.textAlign = 'center';
+    ctx.fillText(pathCode(t), t.x, t.y + size * 0.48);
+  }
+  // Tier-5 glow
+  const top = Math.max(t.paths[0], t.paths[1], t.paths[2]);
+  if (top >= 5) {
+    ctx.save();
+    ctx.globalAlpha = 0.35 + 0.15 * Math.sin(animT * 4);
+    ctx.strokeStyle = '#ffd700';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(t.x, t.y, size * 0.55, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
   }
 }
 function drawProjectile(p) {
@@ -2057,52 +2376,7 @@ function drawHUD() {
 
   // Bottom tower bar removed — BTD right sidebar (DOM) handles tower pick
 
-  // tower info (sits next to docked sidebar, free of overlap)
-  if (selectedTower) {
-    const t = selectedTower;
-    const def = TOWER_DEFS[t.type];
-    const px = towerPanelX(), ipy = 60;
-    drawPanel(px, ipy, 250, 420, 'ui_panel_tower');
-    drawImg('tower_' + t.type, px + 125, ipy + 36, 48, 48);
-    ctx.fillStyle = '#ffd700'; ctx.font = 'bold 15px Segoe UI'; ctx.textAlign = 'center';
-    ctx.fillText(def.name, px + 125, ipy + 72);
-    ctx.fillStyle = '#bbb'; ctx.font = '12px Segoe UI';
-    ctx.fillText('Tier ' + t.upgradeLevel + '/3', px + 125, ipy + 90);
-    ctx.textAlign = 'left'; ctx.fillStyle = '#fff'; ctx.font = '13px Segoe UI';
-    const stats = [
-      'Damage: ' + t.damage,
-      'Range: ' + (t.special === 'infinite_range' ? '∞' : Math.round(t.range)),
-      'Rate: ' + t.fireRate.toFixed(2) + 's',
-      'Pierce: ' + t.pierce,
-      t.income ? 'Income: $' + t.income + '/rd' : null
-    ].filter(Boolean);
-    stats.forEach((s, i) => ctx.fillText(s, px + 15, ipy + 112 + i * 16));
-    for (let u = 0; u < 3; u++) {
-      const up = def.upgrades[u];
-      const uy = ipy + 160 + u * 55;
-      const owned = t.upgradeLevel > u;
-      const next = t.upgradeLevel === u;
-      const canBuy = next && cash >= up.cost;
-      ctx.fillStyle = owned ? 'rgba(76,175,80,0.35)' : canBuy ? 'rgba(255,215,0,0.2)' : 'rgba(0,0,0,0.35)';
-      roundRect(px + 10, uy, 230, 50, 6); ctx.fill();
-      if (next) { ctx.strokeStyle = canBuy ? '#ffd700' : '#666'; ctx.lineWidth = 1.5; ctx.stroke(); }
-      ctx.fillStyle = owned ? '#81c784' : canBuy ? '#fff' : '#888';
-      ctx.font = 'bold 12px Segoe UI'; ctx.textAlign = 'left';
-      ctx.fillText((owned ? '✓ ' : '') + up.name, px + 18, uy + 18);
-      ctx.font = '11px Segoe UI'; ctx.fillStyle = '#aaa';
-      ctx.fillText(up.desc, px + 18, uy + 35);
-      if (!owned) {
-        ctx.fillStyle = canBuy ? '#ffd700' : '#666'; ctx.textAlign = 'right';
-        ctx.fillText('$' + up.cost, px + 228, uy + 25);
-      }
-    }
-    ctx.fillStyle = 'rgba(255,255,255,0.12)';
-    roundRect(px + 10, ipy + 330, 230, 30, 6); ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.font = '12px Segoe UI'; ctx.textAlign = 'center';
-    ctx.fillText('Target: ' + t.targeting.toUpperCase() + ' ↻', px + 125, ipy + 346);
-    drawSpriteButton(px + 10, ipy + 370, 110, 35, 'Sell $' + Math.floor(t.totalCost * 0.7), 'ui_btn_red');
-    drawSpriteButton(px + 130, ipy + 370, 110, 35, 'Close', 'ui_btn_grey');
-  }
+  // Upgrade UI is DOM (#btdUpgradePanel) — BTD6 3×5 paths
 
   if (placingTower) {
     const def = TOWER_DEFS[placingTower];
@@ -2124,7 +2398,7 @@ function drawHUD() {
     }
     const valid = canPlace(mouse.x, mouse.y, placingTower) && mouse.y < H - 130;
     ctx.globalAlpha = 0.75;
-    drawTower({ type: placingTower, x: mouse.x, y: mouse.y, range: def.range, angle: 0, aimAngle: 0, upgradeLevel: 0, shootKick: 0, shootFlash: 0, spriteSize: def.spriteSize }, true);
+    drawTower({ type: placingTower, x: mouse.x, y: mouse.y, range: def.range, angle: 0, aimAngle: 0, paths: [0,0,0], shootKick: 0, shootFlash: 0, spriteSize: def.spriteSize }, true);
     ctx.globalAlpha = 1;
     ctx.fillStyle = valid ? '#4caf50' : '#f44336';
     ctx.font = 'bold 14px Segoe UI'; ctx.textAlign = 'center';
@@ -2314,6 +2588,91 @@ const MAPS_PER_PAGE = 6;
 
 function btdEl(id) { return document.getElementById(id); }
 
+function renderBtdUpgradePanel() {
+  const panel = btdEl('btdUpgradePanel');
+  if (!panel) return;
+  if (!selectedTower || (gameState !== State.GAMEPLAY && gameState !== State.PAUSE)) {
+    panel.classList.add('hidden');
+    panel.style.display = 'none';
+    return;
+  }
+  const t = selectedTower;
+  const def = TOWER_DEFS[t.type];
+  if (!def || !def.paths) {
+    panel.classList.add('hidden');
+    return;
+  }
+  panel.classList.remove('hidden');
+  panel.style.display = 'flex';
+  // dock opposite tower-sidebar
+  panel.classList.toggle('side-right', sidebarSide === 'right');
+  panel.classList.toggle('side-left', sidebarSide === 'left');
+  panel.style.setProperty('--side-w', (document.getElementById('btdSidebar')?.offsetWidth || 220) + 'px');
+
+  const imgEl = btdEl('btdUpgPortrait');
+  if (imgEl) imgEl.src = BTD_PORTRAITS[t.type] || ('public/assets/towers/' + (TOWER_DIRS[t.type] || t.type) + '/idle.png');
+  btdEl('btdUpgName').textContent = def.name;
+  btdEl('btdUpgCode').textContent = pathCode(t) + '  ·  ★' + pathTotal(t);
+  const rng = t.special === 'infinite_range' ? '∞' : Math.round(t.range);
+  btdEl('btdUpgStats').textContent =
+    'DMG ' + t.damage + ' · R ' + rng + ' · ' + t.fireRate.toFixed(2) + 's · P ' + t.pierce +
+    (t.income ? ' · $' + t.income + '/rd' : '') +
+    ' · ' + (t.targeting || 'first').toUpperCase();
+  btdEl('btdUpgTarget').textContent = 'TARGET: ' + (t.targeting || 'first').toUpperCase();
+  btdEl('btdUpgSell').textContent = 'SELL $' + Math.floor(t.totalCost * 0.7);
+
+  const pathsEl = btdEl('btdUpgPaths');
+  pathsEl.innerHTML = '';
+  const pathLabels = def.pathNames || ['Path 1', 'Path 2', 'Path 3'];
+  for (let pi = 0; pi < 3; pi++) {
+    const row = document.createElement('div');
+    row.className = 'btd-path-row';
+    const tiers = document.createElement('div');
+    tiers.className = 'btd-path-tiers';
+    for (let ti = 0; ti < 5; ti++) {
+      const pip = document.createElement('div');
+      pip.className = 'btd-tier-pip';
+      if (t.paths[pi] > ti) pip.classList.add('on');
+      else if (t.paths[pi] === ti && canUpgradePath(t, pi)) pip.classList.add('next');
+      else pip.classList.add('locked');
+      tiers.appendChild(pip);
+    }
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btd-path-buy';
+    const tier = t.paths[pi];
+    if (tier >= 5) {
+      btn.classList.add('owned-max');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="icon">✅</span><div><div class="nm">' + pathLabels[pi] + ' MAX</div><div class="ds">Path complete (5/5)</div></div>';
+    } else {
+      const up = def.paths[pi][tier];
+      const allowed = canUpgradePath(t, pi);
+      const afford = cash >= up.cost;
+      if (allowed && afford) btn.classList.add('can-buy');
+      if (!afford) btn.classList.add('cant');
+      btn.disabled = !allowed;
+      const status = !allowed ? 'LOCKED (crosspath)' : (afford ? 'BUY T' + (tier + 1) : 'Need cash');
+      btn.innerHTML =
+        '<span class="icon">' + (up.icon || '⬆️') + '</span>' +
+        '<div><div class="nm">' + up.name + '</div>' +
+        '<div class="ds">' + up.desc + ' · ' + status + '</div></div>' +
+        '<span class="pr">$' + up.cost.toLocaleString() + '</span>';
+      if (allowed) {
+        btn.onclick = () => {
+          if (applyUpgrade(t, pi)) {
+            sfx('click');
+            renderBtdUpgradePanel();
+          } else sfx('click');
+        };
+      }
+    }
+    row.appendChild(tiers);
+    row.appendChild(btn);
+    pathsEl.appendChild(row);
+  }
+}
+
 function initBtdUi() {
   if (btdUiReady) return;
   btdUiReady = true;
@@ -2370,7 +2729,36 @@ function initBtdUi() {
     };
   });
   btdEl('btdHeroBtn').onclick = () => sfx('click');
-  btdEl('btdUpgradesBtn').onclick = () => sfx('click');
+  btdEl('btdUpgradesBtn').onclick = () => {
+    if (selectedTower) renderBtdUpgradePanel();
+    else {
+      btdEl('btdSelName').textContent = 'TAP A PLACED TOWER';
+      sfx('click');
+    }
+  };
+  btdEl('btdUpgClose').onclick = () => {
+    selectedTower = null;
+    renderBtdUpgradePanel();
+    sfx('click');
+  };
+  btdEl('btdUpgTarget').onclick = () => {
+    if (!selectedTower) return;
+    const modes = ['first', 'last', 'strong', 'close'];
+    selectedTower.targeting = modes[(modes.indexOf(selectedTower.targeting) + 1) % 4];
+    renderBtdUpgradePanel();
+    sfx('click');
+  };
+  btdEl('btdUpgSell').onclick = () => {
+    if (!selectedTower) return;
+    const val = Math.floor(selectedTower.totalCost * 0.7);
+    cash += val;
+    const idx = towers.indexOf(selectedTower);
+    if (idx >= 0) towers.splice(idx, 1);
+    spawnFloat(selectedTower.x, selectedTower.y, '+$' + val, '#4caf50');
+    selectedTower = null;
+    renderBtdUpgradePanel();
+    sfx('sell');
+  };
   btdEl('btdFfBtn').onclick = () => {
     gameSpeed = gameSpeed >= 3 ? 1 : gameSpeed + 1;
     btdEl('btdFfBtn').classList.toggle('active', gameSpeed > 1);
@@ -2565,6 +2953,14 @@ function syncBtdUi() {
     sideEl.classList.add('hidden');
     sideEl.style.display = 'none';
   }
+  // upgrade panel visibility
+  if (typeof renderBtdUpgradePanel === 'function') {
+    if (showSide && selectedTower) renderBtdUpgradePanel();
+    else {
+      const up = btdEl('btdUpgradePanel');
+      if (up) { up.classList.add('hidden'); up.style.display = 'none'; }
+    }
+  }
 
   // Rebuild map cards only when entering map select
   if (showMap && (btdLastState !== State.MAP_SELECT && btdLastState !== State.DIFFICULTY_SELECT || !btdMapsBuilt)) {
@@ -2576,6 +2972,7 @@ function syncBtdUi() {
   if (showSide) {
     if (btdLastCash !== cash || btdLastPlace !== placingTower || btdLastState !== gameState) {
       renderBtdTowerGrid();
+      if (selectedTower) renderBtdUpgradePanel();
       btdLastCash = cash;
       btdLastPlace = placingTower;
     }
