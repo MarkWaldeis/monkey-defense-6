@@ -1,0 +1,144 @@
+{
+  "meta": {
+    "game": "Monkey Defense 6",
+    "edition": "Pro Asset Edition",
+    "version": "3.0",
+    "artStyle": "Kenney flat top-down + custom bloons"
+  },
+  "credits": [
+    {
+      "author": "Kenney",
+      "license": "CC0 1.0",
+      "url": "https://kenney.nl/assets/tower-defense",
+      "files": "kenney/**, towers/* (from Kenney tiles), tiles/* base, bloons/moab|bfb|zomg, many projectiles"
+    },
+    {
+      "author": "Monkey Defense 6 project",
+      "license": "CC0 1.0",
+      "url": "local",
+      "files": "bloons regulars, effects animation frames, ui buttons/panels/icons, recolored snow/lava/dark tiles"
+    }
+  ],
+  "towers": {
+    "dart": "towers/dart_monkey/idle.png",
+    "sniper": "towers/sniper_monkey/idle.png",
+    "bomb": "towers/bomb_shooter/idle.png",
+    "ice": "towers/ice_monkey/idle.png",
+    "wizard": "towers/wizard_monkey/idle.png",
+    "farm": "towers/banana_farm/idle.png",
+    "super": "towers/super_monkey/idle.png",
+    "tack": "towers/tack_shooter/idle.png"
+  },
+  "bloons": {
+    "red": "bloons/red.png",
+    "blue": "bloons/blue.png",
+    "green": "bloons/green.png",
+    "yellow": "bloons/yellow.png",
+    "pink": "bloons/pink.png",
+    "purple": "bloons/purple.png",
+    "black": "bloons/black.png",
+    "white": "bloons/white.png",
+    "lead": "bloons/lead.png",
+    "zebra": "bloons/zebra.png",
+    "rainbow": "bloons/rainbow.png",
+    "ceramic": "bloons/ceramic.png",
+    "moab": "bloons/moab.png",
+    "bfb": "bloons/bfb.png",
+    "zomg": "bloons/zomg.png"
+  },
+  "tiles": {
+    "grass": "tiles/grass.png",
+    "grass_alt": "tiles/grass_alt.png",
+    "dirt": "tiles/dirt.png",
+    "path": "tiles/path_dirt.png",
+    "sand": "tiles/sand.png",
+    "snow": "tiles/snow.png",
+    "snow_alt": "tiles/snow_alt.png",
+    "water": "tiles/water.png",
+    "dark": "tiles/dark.png",
+    "dark_alt": "tiles/dark_alt.png",
+    "lava": "tiles/lava_base.png",
+    "tree": "tiles/tree_round.png",
+    "tree_star": "tiles/tree_star.png",
+    "bush": "tiles/bush.png",
+    "rock1": "tiles/rock1.png",
+    "rock2": "tiles/rock2.png",
+    "rock3": "tiles/rock3.png"
+  },
+  "effects": {
+    "explosion": [
+      "effects/explosion/explosion_00.png",
+      "effects/explosion/explosion_01.png",
+      "effects/explosion/explosion_02.png",
+      "effects/explosion/explosion_03.png",
+      "effects/explosion/explosion_04.png",
+      "effects/explosion/explosion_05.png",
+      "effects/explosion/explosion_06.png",
+      "effects/explosion/explosion_07.png"
+    ],
+    "freeze": [
+      "effects/freeze/freeze_00.png",
+      "effects/freeze/freeze_01.png",
+      "effects/freeze/freeze_02.png",
+      "effects/freeze/freeze_03.png",
+      "effects/freeze/freeze_04.png",
+      "effects/freeze/freeze_05.png"
+    ],
+    "fire": [
+      "effects/fire/fire_00.png",
+      "effects/fire/fire_01.png",
+      "effects/fire/fire_02.png",
+      "effects/fire/fire_03.png",
+      "effects/fire/fire_04.png",
+      "effects/fire/fire_05.png"
+    ],
+    "magic": [
+      "effects/magic/magic_00.png",
+      "effects/magic/magic_01.png",
+      "effects/magic/magic_02.png",
+      "effects/magic/magic_03.png",
+      "effects/magic/magic_04.png",
+      "effects/magic/magic_05.png"
+    ],
+    "pop": [
+      "bloons/pop_animation/pop_00.png",
+      "bloons/pop_animation/pop_01.png",
+      "bloons/pop_animation/pop_02.png",
+      "bloons/pop_animation/pop_03.png",
+      "bloons/pop_animation/pop_04.png",
+      "bloons/pop_animation/pop_05.png"
+    ]
+  },
+  "projectiles": {
+    "dart": "effects/projectiles/dart.png",
+    "bomb": "effects/projectiles/bomb.png",
+    "magic": "effects/projectiles/magic.png",
+    "ice": "effects/projectiles/ice.png",
+    "laser": "effects/projectiles/laser.png",
+    "plasma": "effects/projectiles/plasma.png",
+    "tack": "effects/projectiles/tack.png",
+    "spike": "effects/projectiles/spike.png",
+    "rocket": "effects/projectiles/rocket.png",
+    "bullet": "effects/projectiles/bullet.png"
+  },
+  "ui": {
+    "btn_green": "ui/buttons/btn_green.png",
+    "btn_blue": "ui/buttons/btn_blue.png",
+    "btn_orange": "ui/buttons/btn_orange.png",
+    "btn_red": "ui/buttons/btn_red.png",
+    "btn_grey": "ui/buttons/btn_grey.png",
+    "btn_purple": "ui/buttons/btn_purple.png",
+    "panel_md": "ui/panels/panel_md.png",
+    "panel_lg": "ui/panels/panel_lg.png",
+    "panel_tower": "ui/panels/panel_tower.png",
+    "hud_bar": "ui/panels/hud_bar.png",
+    "tower_bar": "ui/panels/tower_bar.png",
+    "heart": "ui/icons/heart.png",
+    "coin": "ui/icons/coin.png",
+    "round": "ui/icons/round.png",
+    "bar_bg": "ui/healthbar/bar_bg.png",
+    "bar_green": "ui/healthbar/bar_green.png",
+    "bar_yellow": "ui/healthbar/bar_yellow.png",
+    "bar_red": "ui/healthbar/bar_red.png"
+  }
+}

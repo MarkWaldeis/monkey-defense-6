@@ -1,0 +1,26 @@
+# Dependencies & build junk
+node_modules/
+.npm/
+dist/
+*.log
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+*~
+
+# Large / redundant Kenney copies (Default size is enough)
+public/assets/kenney/PNG/Retina/
+public/assets/kenney-tower-defense-top-down.zip
+public/assets/preview_batch/
+public/assets/kenney_contact_sheet.png
+
+# Local tooling caches
+.cache/
+coverage/
+.env
+.env.*

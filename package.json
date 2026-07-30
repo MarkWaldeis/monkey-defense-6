@@ -1,0 +1,10 @@
+{
+  "name": "monkey-defense-6",
+  "version": "3.0.0",
+  "private": true,
+  "description": "Monkey Defense 6 — Bloons TD–inspired browser tower defense",
+  "scripts": {
+    "start": "python -m http.server 8766",
+    "serve": "npx --yes serve -l 8766 ."
+  }
+}
