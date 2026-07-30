@@ -389,8 +389,10 @@ try {
   const u = localStorage.getItem('md6_unlocked');
   if (u) {
     const parsed = JSON.parse(u);
-    // pad/truncate to MAPS length when maps are reworked
-    unlockedMaps = MAPS.map((_, i) => parsed[i] !== false);
+    if (Array.isArray(parsed)) {
+      unlockedMaps = parsed.map(v => v !== false);
+      while (unlockedMaps.length < 8) unlockedMaps.push(true);
+    }
   }
 } catch(e) {}
 
