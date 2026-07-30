@@ -1133,9 +1133,12 @@ function startGame() {
   betweenRoundTimer = 1.5;
   gamePaths = buildPath(MAPS[selectedMap]);
   pathMetricsArr = gamePaths.map(p => pathMetrics(p));
-  buildMapCache();
+  try { buildMapCache(); } catch (e) { console.warn('map cache', e); mapCache = null; }
   gameState = State.GAMEPLAY;
   sfx('click');
+  // force sidebar refresh next frame
+  if (typeof btdLastState !== 'undefined') btdLastState = null;
+  if (typeof btdLastCash !== 'undefined') btdLastCash = -1;
 }
 function roundThreats(r) {
   const waves = ROUNDS[r] || [];
@@ -1984,7 +1987,8 @@ function initBtdUi() {
     btn.onclick = () => {
       selectedDiff = parseInt(btn.dataset.diff, 10);
       btdEl('btdDiffBar').querySelectorAll('.btd-diff').forEach(b => b.classList.toggle('active', b === btn));
-      sfx('click'); renderBtdMaps();
+      sfx('click');
+      // Do not rebuild map cards — only tab highlight changes
     };
   });
   btdEl('btdHeroBtn').onclick = () => sfx('click');
@@ -2046,14 +2050,23 @@ function renderBtdMaps() {
         '<div class="btd-map-stars">' + '★'.repeat(map.difficulty) + '☆'.repeat(4 - map.difficulty) +
         (unlocked ? '' : ' 🔒') + '</div>';
       if (unlocked) {
-        card.onclick = () => {
+        card.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
           selectedMap = i;
           sfx('click');
           card.style.transform = 'scale(0.95)';
-          setTimeout(() => { startGame(); syncBtdUi(); }, 120);
-        };
+          // Start immediately — difficulty already chosen via bottom tabs
+          startGame();
+          btdMapsBuilt = false;
+          syncBtdUi();
+        });
       } else {
-        card.onclick = () => sfx('click');
+        card.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          sfx('click');
+        });
       }
       page.appendChild(card);
     }
@@ -2156,21 +2169,44 @@ function renderBtdTowerGrid() {
   }
 }
 
+let btdLastState = null;
+let btdLastCash = -1;
+let btdLastPlace = null;
+let btdLastSpeed = -1;
+let btdMapsBuilt = false;
+
 function syncBtdUi() {
   initBtdUi();
   const mapEl = btdEl('btdMapSelect');
   const sideEl = btdEl('btdSidebar');
   if (!mapEl || !sideEl) return;
   const showMap = gameState === State.MAP_SELECT || gameState === State.DIFFICULTY_SELECT;
-  const showSide = gameState === State.GAMEPLAY;
+  const showSide = gameState === State.GAMEPLAY || gameState === State.PAUSE;
   mapEl.classList.toggle('hidden', !showMap);
   sideEl.classList.toggle('hidden', !showSide);
-  if (showMap) renderBtdMaps();
-  if (showSide) {
-    renderBtdTowerGrid();
-    btdEl('btdFfBtn').classList.toggle('active', gameSpeed > 1);
-    btdEl('btdFfBtn').textContent = gameSpeed > 1 ? (gameSpeed + 'x') : '▶▶';
+
+  // Only rebuild map cards when entering map select (NOT every frame —
+  // rebuilding destroys cards mid-click and blocks map selection).
+  if (showMap && (btdLastState !== gameState || !btdMapsBuilt)) {
+    renderBtdMaps();
+    btdMapsBuilt = true;
   }
+  if (!showMap) btdMapsBuilt = false;
+
+  // Sidebar: refresh when cash / selection / speed changes
+  if (showSide) {
+    if (btdLastCash !== cash || btdLastPlace !== placingTower || btdLastState !== gameState) {
+      renderBtdTowerGrid();
+      btdLastCash = cash;
+      btdLastPlace = placingTower;
+    }
+    if (btdLastSpeed !== gameSpeed) {
+      btdEl('btdFfBtn').classList.toggle('active', gameSpeed > 1);
+      btdEl('btdFfBtn').textContent = gameSpeed > 1 ? (gameSpeed + 'x') : '▶▶';
+      btdLastSpeed = gameSpeed;
+    }
+  }
+  btdLastState = gameState;
 }
 
 // ─── RENDER ──────────────────────────────────────────────────
