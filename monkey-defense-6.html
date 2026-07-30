@@ -300,10 +300,10 @@ canvas{display:block;margin:0 auto;cursor:default;background:#0a0a14;position:re
     </div>
     <div class="btd-dots" id="btdMapDots"></div>
     <div class="btd-diff-bar" id="btdDiffBar">
-      <button class="btd-diff beginner active" data-diff="0"><span class="medal">💧</span>EASY · R40</button>
-      <button class="btd-diff intermediate" data-diff="1"><span class="medal">🔥</span>MEDIUM · R60</button>
-      <button class="btd-diff advanced" data-diff="2"><span class="medal">🌋</span>HARD · R100</button>
-      <button class="btd-diff expert" data-diff="3"><span class="medal">💀</span>EXPERT · R100</button>
+      <button class="btd-diff beginner active" data-diff="0"><span class="medal">💧</span>BEGINNER</button>
+      <button class="btd-diff intermediate" data-diff="1"><span class="medal">🔥</span>INTERMEDIATE</button>
+      <button class="btd-diff advanced" data-diff="2"><span class="medal">🌋</span>ADVANCED</button>
+      <button class="btd-diff expert" data-diff="3"><span class="medal">💀</span>EXPERT</button>
     </div>
     <button class="btd-hero" id="btdHeroBtn" type="button">
       <img id="btdHeroImg" alt="hero" src="public/assets/ui/btd/tower-dart-monkey.png">
@@ -986,8 +986,55 @@ const MAPS = [
       {type:'bush',x:0.50,y:0.55},{type:'rock',x:0.45,y:0.70},{type:'lake',x:0.18,y:0.50},
       {type:'lake',x:0.78,y:0.55}
     ]
+  },
+
+  // ─── INTERMEDIATE (MEDIUM tab) — harder, less open space ───
+  // 7) Cracked Quarry — long tight stone maze (Intermediate)
+  {
+    name: 'Cracked Quarry', difficulty: 2, terrain: 'dark', pathStyle: 'stone',
+    path: [
+      {x:0.00,y:0.22},{x:0.22,y:0.20},{x:0.28,y:0.38},{x:0.18,y:0.52},
+      {x:0.28,y:0.68},{x:0.42,y:0.58},{x:0.48,y:0.38},{x:0.38,y:0.22},
+      {x:0.52,y:0.18},{x:0.68,y:0.28},{x:0.62,y:0.48},{x:0.72,y:0.62},
+      {x:0.58,y:0.75},{x:0.48,y:0.88},{x:0.68,y:0.90},{x:0.82,y:0.78},
+      {x:0.88,y:0.58},{x:0.78,y:0.42},{x:0.88,y:0.28},{x:0.98,y:0.40}
+    ],
+    waterZones: [{x:0.12,y:0.82,rx:0.08,ry:0.07}],
+    obstacles: [
+      {x:0.35,y:0.45,r:0.06},{x:0.55,y:0.55,r:0.055},{x:0.72,y:0.35,r:0.05}
+    ],
+    decorations: [
+      {type:'rock',x:0.35,y:0.45},{type:'rock',x:0.55,y:0.55},{type:'rock',x:0.72,y:0.35},
+      {type:'rock',x:0.20,y:0.80},{type:'tree',x:0.08,y:0.12},{type:'tree',x:0.92,y:0.88},
+      {type:'bush',x:0.90,y:0.15},{type:'lake',x:0.12,y:0.82}
+    ]
+  },
+  // 8) Twin Lanes — dual paths merge (multi-path Intermediate)
+  {
+    name: 'Twin Lanes', difficulty: 2, terrain: 'lava', pathStyle: 'road', multiPath: true,
+    path: [
+      {x:0.00,y:0.22},{x:0.20,y:0.20},{x:0.35,y:0.32},{x:0.48,y:0.28},
+      {x:0.58,y:0.42},{x:0.70,y:0.48},{x:0.82,y:0.42},{x:0.92,y:0.50},{x:0.98,y:0.55}
+    ],
+    path2: [
+      {x:0.00,y:0.78},{x:0.20,y:0.80},{x:0.35,y:0.68},{x:0.48,y:0.72},
+      {x:0.58,y:0.58},{x:0.70,y:0.52},{x:0.82,y:0.58},{x:0.92,y:0.50},{x:0.98,y:0.55}
+    ],
+    waterZones: [{x:0.50,y:0.50,rx:0.07,ry:0.08}],
+    obstacles: [{x:0.42,y:0.50,r:0.05},{x:0.28,y:0.50,r:0.045}],
+    decorations: [
+      {type:'rock',x:0.28,y:0.50},{type:'rock',x:0.42,y:0.50},{type:'rock',x:0.15,y:0.45},
+      {type:'rock',x:0.85,y:0.70},{type:'rock',x:0.12,y:0.12},{type:'rock',x:0.88,y:0.18},
+      {type:'lake',x:0.50,y:0.50}
+    ]
   }
 ];
+
+/** Maps shown on a difficulty tab: 0=Beginner, 1=Intermediate, 2=Advanced, 3=Expert */
+function mapsForTab(diffIdx) {
+  const want = (diffIdx | 0) + 1; // 1..4
+  return MAPS.map((m, i) => ({ m, i })).filter(x => (x.m.difficulty || 1) === want);
+}
 
 function buildRounds() {
   // BTD6-inspired: slow start, low density early, bosses later. Spacing (s) high = slower spawn.
@@ -2861,13 +2908,16 @@ function initBtdUi() {
   btdEl('btdMapBack').onclick = () => { gameState = State.MAIN_MENU; sfx('click'); syncBtdUi(); };
   btdEl('btdMapPrev').onclick = () => { btdMapPage = Math.max(0, btdMapPage - 1); renderBtdMaps(); sfx('click'); };
   btdEl('btdMapNext').onclick = () => {
-    const pages = Math.max(1, Math.ceil(MAPS.length / MAPS_PER_PAGE));
+    const list = mapsForTab(selectedDiff);
+    const pages = Math.max(1, Math.ceil(Math.max(list.length, 1) / MAPS_PER_PAGE));
     btdMapPage = Math.min(pages - 1, btdMapPage + 1); renderBtdMaps(); sfx('click');
   };
   btdEl('btdDiffBar').querySelectorAll('.btd-diff').forEach(btn => {
     btn.onclick = () => {
       selectedDiff = parseInt(btn.dataset.diff, 10);
+      btdMapPage = 0;
       btdEl('btdDiffBar').querySelectorAll('.btd-diff').forEach(b => b.classList.toggle('active', b === btn));
+      renderBtdMaps();
       sfx('click');
     };
   });
@@ -2958,51 +3008,74 @@ function mapThumbFor(i) {
   return BTD_BASE + 'sunny-grove-map.png';
 }
 function mapFilterFor(i) {
-  // Match beginner map themes: grass, desert, logs, candy, snow, spa
-  const f = [
-    'none',
-    'hue-rotate(-25deg) saturate(1.35) brightness(1.1)', // desert
-    'hue-rotate(25deg) saturate(0.95) brightness(0.95)', // logs/river green
-    'hue-rotate(300deg) saturate(1.5) brightness(1.05)', // candy pink
-    'hue-rotate(180deg) brightness(1.2) saturate(0.7)', // alpine snow
-    'hue-rotate(10deg) saturate(1.1) brightness(1.05)'  // spa
-  ];
-  return f[i % f.length];
+  const map = MAPS[i];
+  if (!map) return 'none';
+  if (map.terrain === 'sand') return 'hue-rotate(-25deg) saturate(1.35) brightness(1.1)';
+  if (map.terrain === 'candy') return 'hue-rotate(300deg) saturate(1.5) brightness(1.05)';
+  if (map.terrain === 'snow') return 'hue-rotate(180deg) brightness(1.2) saturate(0.7)';
+  if (map.terrain === 'dark') return 'hue-rotate(220deg) brightness(0.65) saturate(0.9)';
+  if (map.terrain === 'lava') return 'hue-rotate(-15deg) saturate(1.5) brightness(0.8)';
+  if (map.name === 'Logs') return 'hue-rotate(25deg) saturate(0.95) brightness(0.95)';
+  return 'none';
 }
 
 function renderBtdMaps() {
   const track = btdEl('btdMapTrack');
   const dots = btdEl('btdMapDots');
   if (!track) return;
-  // Always keep maps unlocked (selection must never soft-lock)
   for (let i = 0; i < MAPS.length; i++) unlockedMaps[i] = true;
 
-  const pages = Math.max(1, Math.ceil(MAPS.length / MAPS_PER_PAGE));
+  // Filter maps by difficulty tab (Beginner / Intermediate / Advanced / Expert)
+  const list = mapsForTab(selectedDiff);
+  const pages = Math.max(1, Math.ceil(Math.max(list.length, 1) / MAPS_PER_PAGE));
   btdMapPage = clamp(btdMapPage, 0, pages - 1);
   track.innerHTML = '';
   dots.innerHTML = '';
+
+  if (list.length === 0) {
+    const page = document.createElement('div');
+    page.className = 'btd-map-page';
+    page.style.display = 'flex';
+    page.style.alignItems = 'center';
+    page.style.justifyContent = 'center';
+    page.innerHTML =
+      '<div style="text-align:center;padding:40px;color:#fff;font-family:\'Luckiest Guy\',cursive;text-shadow:0 2px 4px #000">' +
+      '<div style="font-size:28px;margin-bottom:12px">COMING SOON</div>' +
+      '<div style="font-size:16px;opacity:.85">More maps for this difficulty soon!</div></div>';
+    track.appendChild(page);
+    const dot = document.createElement('div');
+    dot.className = 'btd-dot on';
+    dots.appendChild(dot);
+    track.style.transform = 'translateX(0)';
+    btdEl('btdDiffBar').querySelectorAll('.btd-diff').forEach(b => {
+      b.classList.toggle('active', parseInt(b.dataset.diff, 10) === selectedDiff);
+    });
+    return;
+  }
+
   for (let p = 0; p < pages; p++) {
     const page = document.createElement('div');
     page.className = 'btd-map-page';
     for (let j = 0; j < MAPS_PER_PAGE; j++) {
-      const i = p * MAPS_PER_PAGE + j;
-      if (i >= MAPS.length) {
+      const idx = p * MAPS_PER_PAGE + j;
+      if (idx >= list.length) {
         const empty = document.createElement('div');
         empty.style.visibility = 'hidden';
         page.appendChild(empty);
         continue;
       }
-      const map = MAPS[i];
+      const { m: map, i } = list[idx];
       const card = document.createElement('div');
       card.className = 'btd-map-card';
       card.setAttribute('data-map', String(i));
       card.setAttribute('role', 'button');
       card.tabIndex = 0;
+      const diffLabel = ['', 'Beginner', 'Intermediate', 'Advanced', 'Expert'][map.difficulty] || '';
       card.innerHTML =
         '<div class="btd-map-title">' + map.name + '</div>' +
         '<img class="btd-map-thumb" alt="" draggable="false" src="' + mapThumbFor(i) + '" style="filter:' + mapFilterFor(i) + '">' +
         '<div class="btd-map-stars">' + '★'.repeat(map.difficulty) + '☆'.repeat(4 - map.difficulty) +
-        ' · CLICK TO PLAY</div>';
+        ' · ' + diffLabel + ' · CLICK TO PLAY</div>';
       page.appendChild(card);
     }
     track.appendChild(page);

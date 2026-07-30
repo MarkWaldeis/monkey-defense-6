@@ -34,9 +34,10 @@ dart, boomer, tack, sniper, ninja, **water**, glue, bomb, ice, wizard, farm, sup
 ## Modes
 Easy R40 · Medium R60 · Hard R100 · Expert R100 (harder stats)  
 Difficulty tabs on map select stay (BTD-style). Current maps are **Beginner/Easy** pack only.  
-## Maps (Beginner)
-Monkey Meadow · In the Loop · Logs · Candy Falls · Alpine Lake · Spa Pits  
-(BTD6-inspired easy layouts; stone/road/candy path styles; water zones for boat/sub)  
+## Maps
+**Beginner tab:** Monkey Meadow · In the Loop · Logs · Candy Falls · Alpine Lake · Spa Pits  
+**Intermediate tab:** Cracked Quarry · Twin Lanes (multi-path)  
+**Advanced / Expert tabs:** Coming soon placeholder  
 ## Enemies
 MOAB → BFB → ZOMG → DDT (camo+lead) → BAD; high HP BTD6-style bosses
 
