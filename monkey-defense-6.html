@@ -142,6 +142,9 @@ function buildAssetList() {
   Object.entries(TOWER_IDLE2).forEach(([k, arr]) => {
     arr.forEach((v, i) => add('tower_' + k + '_f' + i, v));
   });
+  // Kenney machine overlays (CC0) used as bomb/tack sources
+  add('kenney_cannon', 'towers/bomb_shooter/kenney_cannon.png');
+  add('kenney_multi', 'towers/tack_shooter/kenney_multi.png');
   WIZARD_FRAMES.forEach((v, i) => add('wizard_idle_' + i, v));
   WIZARD_ATTACK.forEach((v, i) => add('wizard_atk_' + i, v));
   Object.entries(BLOON_SPRITE).forEach(([k, v]) => add('bloon_' + k, v));
@@ -308,57 +311,59 @@ const TOWER_DEFS = {
 };
 const TOWER_ORDER = ['dart', 'sniper', 'bomb', 'ice', 'wizard', 'farm', 'super', 'tack'];
 
+// Paths use normalized 0–1 coords. Start/end stay inset so bloons enter/exit
+// on-screen at clear IN/OUT fort markers (never fly off the raw edge).
 const MAPS = [
   {
     name: 'Monkey Meadow', difficulty: 1, terrain: 'grass',
-    path: [{x:0,y:0.45},{x:0.2,y:0.45},{x:0.3,y:0.25},{x:0.45,y:0.25},{x:0.55,y:0.55},{x:0.7,y:0.55},{x:0.8,y:0.3},{x:0.95,y:0.3},{x:1.05,y:0.5}],
+    path: [{x:0.02,y:0.45},{x:0.18,y:0.45},{x:0.28,y:0.25},{x:0.44,y:0.25},{x:0.54,y:0.55},{x:0.68,y:0.55},{x:0.78,y:0.3},{x:0.90,y:0.3},{x:0.93,y:0.48}],
     decorations: [
-      {type:'tree',x:0.15,y:0.2},{type:'tree',x:0.4,y:0.7},{type:'tree',x:0.75,y:0.15},
-      {type:'tree',x:0.85,y:0.7},{type:'bush',x:0.25,y:0.65},{type:'bush',x:0.6,y:0.2},
-      {type:'rock',x:0.5,y:0.75},{type:'tree_star',x:0.9,y:0.5}
+      {type:'tree',x:0.15,y:0.18},{type:'tree',x:0.4,y:0.72},{type:'tree',x:0.72,y:0.14},
+      {type:'tree',x:0.82,y:0.72},{type:'bush',x:0.25,y:0.65},{type:'bush',x:0.58,y:0.18},
+      {type:'rock',x:0.48,y:0.78},{type:'tree_star',x:0.12,y:0.72}
     ]
   },
   {
     name: 'Tree Stump', difficulty: 1, terrain: 'grass',
     path: [
-      {x:0,y:0.5},{x:0.25,y:0.5},{x:0.35,y:0.3},{x:0.5,y:0.2},{x:0.65,y:0.3},
-      {x:0.75,y:0.5},{x:0.65,y:0.7},{x:0.5,y:0.8},{x:0.35,y:0.7},{x:0.3,y:0.5},
-      {x:0.4,y:0.35},{x:0.55,y:0.3},{x:0.7,y:0.4},{x:0.8,y:0.55},{x:1.05,y:0.55}
+      {x:0.02,y:0.5},{x:0.22,y:0.5},{x:0.32,y:0.3},{x:0.48,y:0.2},{x:0.62,y:0.3},
+      {x:0.72,y:0.5},{x:0.62,y:0.7},{x:0.48,y:0.8},{x:0.34,y:0.7},{x:0.28,y:0.5},
+      {x:0.38,y:0.35},{x:0.52,y:0.3},{x:0.68,y:0.4},{x:0.82,y:0.52},{x:0.93,y:0.55}
     ],
     decorations: [
-      {type:'stump',x:0.5,y:0.5},{type:'tree',x:0.1,y:0.15},{type:'tree',x:0.9,y:0.2},
-      {type:'tree',x:0.15,y:0.8},{type:'bush',x:0.2,y:0.25},{type:'rock',x:0.8,y:0.75}
+      {type:'stump',x:0.5,y:0.5},{type:'tree',x:0.1,y:0.14},{type:'tree',x:0.88,y:0.18},
+      {type:'tree',x:0.14,y:0.82},{type:'bush',x:0.2,y:0.25},{type:'rock',x:0.78,y:0.78}
     ]
   },
   {
     name: 'Frozen Lake', difficulty: 2, terrain: 'snow',
     path: [
-      {x:0,y:0.3},{x:0.3,y:0.3},{x:0.4,y:0.45},{x:0.5,y:0.5},{x:0.6,y:0.45},
-      {x:0.7,y:0.3},{x:0.85,y:0.3},{x:0.9,y:0.5},{x:0.85,y:0.7},{x:0.5,y:0.7},
-      {x:0.2,y:0.7},{x:0.15,y:0.85},{x:0.4,y:0.9},{x:1.05,y:0.9}
+      {x:0.02,y:0.28},{x:0.28,y:0.28},{x:0.38,y:0.45},{x:0.48,y:0.5},{x:0.58,y:0.45},
+      {x:0.68,y:0.28},{x:0.82,y:0.28},{x:0.88,y:0.48},{x:0.82,y:0.68},{x:0.48,y:0.68},
+      {x:0.2,y:0.68},{x:0.16,y:0.82},{x:0.4,y:0.88},{x:0.72,y:0.88},{x:0.93,y:0.88}
     ],
     decorations: [
-      {type:'lake',x:0.5,y:0.4},{type:'tree',x:0.1,y:0.15},{type:'tree',x:0.9,y:0.15},
-      {type:'rock',x:0.2,y:0.55},{type:'rock',x:0.8,y:0.55}
+      {type:'lake',x:0.5,y:0.4},{type:'tree',x:0.1,y:0.14},{type:'tree',x:0.88,y:0.14},
+      {type:'rock',x:0.2,y:0.52},{type:'rock',x:0.78,y:0.52}
     ]
   },
   {
     name: 'Lava Fields', difficulty: 3, terrain: 'lava', multiPath: true,
-    path: [{x:0,y:0.25},{x:0.3,y:0.25},{x:0.45,y:0.4},{x:0.55,y:0.5},{x:0.7,y:0.55},{x:0.9,y:0.55},{x:1.05,y:0.55}],
-    path2: [{x:0,y:0.75},{x:0.3,y:0.75},{x:0.45,y:0.6},{x:0.55,y:0.5},{x:0.7,y:0.55},{x:0.9,y:0.55},{x:1.05,y:0.55}],
+    path: [{x:0.02,y:0.25},{x:0.28,y:0.25},{x:0.42,y:0.4},{x:0.52,y:0.5},{x:0.68,y:0.55},{x:0.84,y:0.55},{x:0.93,y:0.55}],
+    path2: [{x:0.02,y:0.75},{x:0.28,y:0.75},{x:0.42,y:0.6},{x:0.52,y:0.5},{x:0.68,y:0.55},{x:0.84,y:0.55},{x:0.93,y:0.55}],
     decorations: [
-      {type:'rock',x:0.4,y:0.2},{type:'rock',x:0.85,y:0.75},{type:'rock',x:0.2,y:0.5}
+      {type:'rock',x:0.38,y:0.18},{type:'rock',x:0.82,y:0.78},{type:'rock',x:0.18,y:0.5}
     ]
   },
   {
     name: 'Dark Castle', difficulty: 4, terrain: 'dark',
     path: [
-      {x:0,y:0.2},{x:0.25,y:0.2},{x:0.25,y:0.45},{x:0.45,y:0.45},{x:0.45,y:0.2},
-      {x:0.7,y:0.2},{x:0.7,y:0.55},{x:0.35,y:0.55},{x:0.35,y:0.75},{x:0.6,y:0.75},
-      {x:0.6,y:0.9},{x:0.85,y:0.9},{x:0.85,y:0.4},{x:1.05,y:0.4}
+      {x:0.02,y:0.2},{x:0.24,y:0.2},{x:0.24,y:0.45},{x:0.44,y:0.45},{x:0.44,y:0.2},
+      {x:0.68,y:0.2},{x:0.68,y:0.55},{x:0.34,y:0.55},{x:0.34,y:0.75},{x:0.58,y:0.75},
+      {x:0.58,y:0.88},{x:0.82,y:0.88},{x:0.82,y:0.42},{x:0.93,y:0.42}
     ],
     decorations: [
-      {type:'castle',x:0.55,y:0.35},{type:'rock',x:0.15,y:0.6},{type:'rock',x:0.8,y:0.65}
+      {type:'castle',x:0.52,y:0.34},{type:'rock',x:0.14,y:0.6},{type:'rock',x:0.76,y:0.62}
     ]
   }
 ];
@@ -463,12 +468,18 @@ function toGame(cx, cy) { return { x: (cx - ox) / scale, y: (cy - oy) / scale };
 
 function buildPath(map) {
   const paths = [];
-  const mapH = H - 140;
+  // Keep playfield clear of HUD: top bar 50px, bottom panel 120px, side margins 16px
+  const mapTop = 50, mapH = H - 170;
+  const marginX = 16, usableW = W - marginX * 2;
+  const toWorld = (p) => ({
+    x: marginX + clamp(p.x, 0, 1) * usableW,
+    y: mapTop + clamp(p.y, 0, 1) * mapH
+  });
   if (map.multiPath) {
-    paths.push(map.path.map(p => ({ x: p.x * W, y: p.y * mapH + 50 })));
-    paths.push(map.path2.map(p => ({ x: p.x * W, y: p.y * mapH + 50 })));
+    paths.push(map.path.map(toWorld));
+    paths.push(map.path2.map(toWorld));
   } else {
-    paths.push(map.path.map(p => ({ x: p.x * W, y: p.y * mapH + 50 })));
+    paths.push(map.path.map(toWorld));
   }
   return paths;
 }
@@ -822,22 +833,30 @@ function buildMapCache() {
       drawDecoTo(g, d.type, x, y, map.terrain);
     }
   }
-  // entrance / exit markers
+  // entrance portal + exit fort (bloons die / cost lives only at the fort)
   for (const pts of gamePaths) {
     const sx = pts[0].x, sy = pts[0].y - mapTop;
     const ex = pts[pts.length-1].x, ey = pts[pts.length-1].y - mapTop;
-    // start
-    g.fillStyle = 'rgba(76,175,80,0.9)';
-    g.beginPath(); g.arc(sx, sy, 14, 0, Math.PI*2); g.fill();
-    g.strokeStyle = '#fff'; g.lineWidth = 2; g.stroke();
+    // IN portal
+    g.fillStyle = 'rgba(46,125,50,0.95)';
+    g.beginPath(); g.arc(sx, sy, 16, 0, Math.PI*2); g.fill();
+    g.strokeStyle = '#a5d6a7'; g.lineWidth = 3; g.stroke();
     g.fillStyle = '#fff'; g.font = 'bold 11px Segoe UI'; g.textAlign = 'center'; g.textBaseline = 'middle';
     g.fillText('IN', sx, sy);
-    // exit
-    g.fillStyle = 'rgba(244,67,54,0.9)';
-    g.beginPath(); g.arc(ex, ey, 14, 0, Math.PI*2); g.fill();
-    g.strokeStyle = '#fff'; g.lineWidth = 2; g.stroke();
-    g.fillStyle = '#fff';
-    g.fillText('OUT', ex, ey);
+    // EXIT fort / base — clear sink so leaks feel intentional
+    g.fillStyle = 'rgba(60,20,20,0.92)';
+    g.fillRect(ex - 22, ey - 18, 44, 36);
+    g.fillStyle = 'rgba(183,28,28,0.95)';
+    g.fillRect(ex - 18, ey - 10, 36, 24);
+    g.strokeStyle = '#ffcdd2'; g.lineWidth = 2;
+    g.strokeRect(ex - 22, ey - 18, 44, 36);
+    // battlements
+    g.fillStyle = '#b71c1c';
+    for (let i = 0; i < 4; i++) g.fillRect(ex - 20 + i * 11, ey - 24, 8, 8);
+    g.fillStyle = '#fff'; g.font = 'bold 10px Segoe UI';
+    g.fillText('BASE', ex, ey + 2);
+    g.font = 'bold 9px Segoe UI'; g.fillStyle = '#ffcdd2';
+    g.fillText('♥', ex, ey - 8);
   }
   mapCache = off;
 }
@@ -1014,8 +1033,15 @@ function updateGameplay(t, diff) {
     const pos = posOnPath(pts, pm.segs, pm.total, b.progress);
     b.x = pos.x; b.y = pos.y + Math.sin(b.wobble) * 1.5;
     if (b.progress >= 1) {
-      lives -= b.rbe; b.alive = false; bloons.splice(i, 1);
-      spawnFloat(b.x, b.y, '-' + b.rbe + ' lives', '#f44336');
+      // Leak at the BASE fort — lives lost = remaining RBE
+      const loss = Math.max(1, b.rbe | 0);
+      lives -= loss;
+      b.alive = false;
+      bloons.splice(i, 1);
+      spawnParticles(b.x, b.y, '#f44336', 10, 90);
+      spawnFloat(b.x, b.y - 12, '−' + loss + ' ❤', '#ff5252');
+      spawnFloat(b.x, b.y + 8, 'LEAK!', '#ff8a80');
+      beep(180, 0.12, 'sawtooth', 0.08, -80);
       if (lives <= 0) { lives = 0; loseGame(); }
     }
   }

@@ -24,6 +24,8 @@ Original tower-defense game inspired by the Bloons TD genre.
 
 - Map terrain tiles (grass, dirt/path, sand, water edges)
 - Tower sprites (turrets, rocket launchers, tanks, crystal pads)
+- **Bomb Shooter** — Kenney rocket/mortar tiles (`towerDefense_tile205–206`) on a pad
+- **Tack Shooter** — Kenney multi-barrel launcher (`towerDefense_tile204`) as nail machine
 - MOAB-class enemies (planes / tanks recolored as aerial blimps)
 - Projectiles (bullets, rockets, flames)
 - Some decorations (trees, bushes, rocks, circular pads)
