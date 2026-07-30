@@ -384,8 +384,15 @@ let autoStart = false, betweenRoundTimer = 0;
 let totalPopped = 0, totalSpent = 0;
 let roundWarnings = []; // {text, color, life, icon}
 let warnBanner = null;  // persistent between-round banner
-let unlockedMaps = [true, false, false, false, false];
-try { const u = localStorage.getItem('md6_unlocked'); if (u) unlockedMaps = JSON.parse(u); } catch(e) {}
+let unlockedMaps = [true, true, true, true, true, true];
+try {
+  const u = localStorage.getItem('md6_unlocked');
+  if (u) {
+    const parsed = JSON.parse(u);
+    // pad/truncate to MAPS length when maps are reworked
+    unlockedMaps = MAPS.map((_, i) => parsed[i] !== false);
+  }
+} catch(e) {}
 
 let gamePaths = [], pathMetricsArr = [];
 let mapCache = null; // offscreen canvas for tiled map
@@ -863,70 +870,119 @@ const TOWER_DEFS = {
 };
 const TOWER_ORDER = ['dart', 'boomer', 'tack', 'sniper', 'ninja', 'water', 'sub', 'glue', 'bomb', 'ice', 'wizard', 'farm', 'super'];
 
-// Paths use normalized 0–1 coords. Start/end stay inset so bloons enter/exit
-// on-screen at clear IN/OUT fort markers (never fly off the raw edge).
-// waterZones: normalized ellipses {x,y,rx,ry} in map space (same as path 0–1)
+// ─── BEGINNER / EASY MAPS (BTD6-inspired paths) ───────────────
+// Normalized 0–1 path points. difficulty 1 = beginner tab.
+// waterZones / obstacles use same normalized coords as path.
+// Intermediate+ map packs reserved (empty pages / same pool for now).
 const MAPS = [
+  // 1) Monkey Meadow — classic stone S-path, lots of open grass (easiest)
   {
-    name: 'Monkey Meadow', difficulty: 1, terrain: 'grass',
-    path: [{x:0.02,y:0.45},{x:0.18,y:0.45},{x:0.28,y:0.25},{x:0.44,y:0.25},{x:0.54,y:0.55},{x:0.68,y:0.55},{x:0.78,y:0.3},{x:0.90,y:0.3},{x:0.93,y:0.48}],
-    waterZones: [{x:0.18,y:0.78,rx:0.12,ry:0.11},{x:0.72,y:0.78,rx:0.11,ry:0.10}],
-    decorations: [
-      {type:'tree',x:0.15,y:0.18},{type:'tree',x:0.4,y:0.72},{type:'tree',x:0.72,y:0.14},
-      {type:'tree',x:0.82,y:0.72},{type:'bush',x:0.25,y:0.65},{type:'bush',x:0.58,y:0.18},
-      {type:'rock',x:0.48,y:0.78},{type:'tree_star',x:0.12,y:0.72},
-      {type:'lake',x:0.18,y:0.78},{type:'lake',x:0.72,y:0.78}
-    ]
-  },
-  {
-    name: 'Tree Stump', difficulty: 1, terrain: 'grass',
+    name: 'Monkey Meadow', difficulty: 1, terrain: 'grass', pathStyle: 'stone',
     path: [
-      {x:0.02,y:0.5},{x:0.22,y:0.5},{x:0.32,y:0.3},{x:0.48,y:0.2},{x:0.62,y:0.3},
-      {x:0.72,y:0.5},{x:0.62,y:0.7},{x:0.48,y:0.8},{x:0.34,y:0.7},{x:0.28,y:0.5},
-      {x:0.38,y:0.35},{x:0.52,y:0.3},{x:0.68,y:0.4},{x:0.82,y:0.52},{x:0.93,y:0.55}
+      {x:0.00,y:0.48},{x:0.18,y:0.48},{x:0.26,y:0.28},{x:0.40,y:0.22},
+      {x:0.48,y:0.36},{x:0.40,y:0.50},{x:0.26,y:0.52},{x:0.22,y:0.68},
+      {x:0.36,y:0.78},{x:0.52,y:0.70},{x:0.58,y:0.48},{x:0.58,y:0.28},
+      {x:0.72,y:0.22},{x:0.84,y:0.34},{x:0.80,y:0.52},{x:0.70,y:0.62},
+      {x:0.78,y:0.78},{x:0.92,y:0.70},{x:0.98,y:0.52}
     ],
-    waterZones: [{x:0.12,y:0.82,rx:0.10,ry:0.09},{x:0.88,y:0.22,rx:0.09,ry:0.08}],
+    waterZones: [{x:0.12,y:0.18,rx:0.08,ry:0.07}],
     decorations: [
-      {type:'stump',x:0.5,y:0.5},{type:'tree',x:0.1,y:0.14},{type:'tree',x:0.88,y:0.18},
-      {type:'tree',x:0.14,y:0.82},{type:'bush',x:0.2,y:0.25},{type:'rock',x:0.78,y:0.78},
-      {type:'lake',x:0.12,y:0.82},{type:'lake',x:0.88,y:0.22}
+      {type:'tree',x:0.08,y:0.12},{type:'tree',x:0.92,y:0.12},{type:'tree',x:0.08,y:0.88},
+      {type:'tree',x:0.92,y:0.88},{type:'bush',x:0.45,y:0.12},{type:'bush',x:0.55,y:0.88},
+      {type:'rock',x:0.35,y:0.40},{type:'rock',x:0.68,y:0.42},{type:'tree_star',x:0.88,y:0.55},
+      {type:'lake',x:0.12,y:0.18}
     ]
   },
+  // 2) In the Loop — desert road around a pond (easy, water for boat/sub)
   {
-    name: 'Frozen Lake', difficulty: 2, terrain: 'snow',
+    name: 'In the Loop', difficulty: 1, terrain: 'sand', pathStyle: 'road',
     path: [
-      {x:0.02,y:0.28},{x:0.28,y:0.28},{x:0.38,y:0.45},{x:0.48,y:0.5},{x:0.58,y:0.45},
-      {x:0.68,y:0.28},{x:0.82,y:0.28},{x:0.88,y:0.48},{x:0.82,y:0.68},{x:0.48,y:0.68},
-      {x:0.2,y:0.68},{x:0.16,y:0.82},{x:0.4,y:0.88},{x:0.72,y:0.88},{x:0.93,y:0.88}
+      {x:0.00,y:0.52},{x:0.16,y:0.40},{x:0.30,y:0.58},{x:0.44,y:0.42},
+      {x:0.56,y:0.52},{x:0.66,y:0.38},{x:0.78,y:0.32},{x:0.90,y:0.42},
+      {x:0.92,y:0.58},{x:0.82,y:0.72},{x:0.68,y:0.68},{x:0.62,y:0.52},
+      {x:0.72,y:0.48},{x:0.88,y:0.50},{x:0.98,y:0.50}
     ],
-    waterZones: [{x:0.5,y:0.4,rx:0.22,ry:0.18}],
+    waterZones: [{x:0.78,y:0.52,rx:0.11,ry:0.13}],
     decorations: [
-      {type:'lake',x:0.5,y:0.4},{type:'tree',x:0.1,y:0.14},{type:'tree',x:0.88,y:0.14},
-      {type:'rock',x:0.2,y:0.52},{type:'rock',x:0.78,y:0.52}
+      {type:'cactus',x:0.12,y:0.18},{type:'cactus',x:0.28,y:0.22},{type:'cactus',x:0.48,y:0.14},
+      {type:'cactus',x:0.18,y:0.82},{type:'cactus',x:0.40,y:0.88},{type:'cactus',x:0.92,y:0.18},
+      {type:'cactus',x:0.55,y:0.78},{type:'rock',x:0.35,y:0.30},{type:'rock',x:0.50,y:0.70},
+      {type:'lake',x:0.78,y:0.52}
     ]
   },
+  // 3) Logs — dual rock spirals + river (easy BTD Logs vibe)
   {
-    name: 'Lava Fields', difficulty: 3, terrain: 'lava', multiPath: true,
-    path: [{x:0.02,y:0.25},{x:0.28,y:0.25},{x:0.42,y:0.4},{x:0.52,y:0.5},{x:0.68,y:0.55},{x:0.84,y:0.55},{x:0.93,y:0.55}],
-    path2: [{x:0.02,y:0.75},{x:0.28,y:0.75},{x:0.42,y:0.6},{x:0.52,y:0.5},{x:0.68,y:0.55},{x:0.84,y:0.55},{x:0.93,y:0.55}],
-    // Cool spring pool (still "water" for boat/sub)
-    waterZones: [{x:0.12,y:0.5,rx:0.09,ry:0.12}],
-    decorations: [
-      {type:'rock',x:0.38,y:0.18},{type:'rock',x:0.82,y:0.78},{type:'rock',x:0.18,y:0.5},
-      {type:'lake',x:0.12,y:0.5}
-    ]
-  },
-  {
-    name: 'Dark Castle', difficulty: 4, terrain: 'dark',
+    name: 'Logs', difficulty: 1, terrain: 'grass', pathStyle: 'stone',
     path: [
-      {x:0.02,y:0.2},{x:0.24,y:0.2},{x:0.24,y:0.45},{x:0.44,y:0.45},{x:0.44,y:0.2},
-      {x:0.68,y:0.2},{x:0.68,y:0.55},{x:0.34,y:0.55},{x:0.34,y:0.75},{x:0.58,y:0.75},
-      {x:0.58,y:0.88},{x:0.82,y:0.88},{x:0.82,y:0.42},{x:0.93,y:0.42}
+      {x:0.00,y:0.55},{x:0.14,y:0.55},{x:0.18,y:0.72},{x:0.30,y:0.82},
+      {x:0.40,y:0.72},{x:0.36,y:0.58},{x:0.28,y:0.52},{x:0.22,y:0.62},
+      {x:0.28,y:0.70},{x:0.42,y:0.55},{x:0.50,y:0.48},{x:0.58,y:0.55},
+      {x:0.68,y:0.42},{x:0.72,y:0.28},{x:0.82,y:0.22},{x:0.90,y:0.32},
+      {x:0.84,y:0.45},{x:0.74,y:0.48},{x:0.78,y:0.38},{x:0.88,y:0.42},
+      {x:0.98,y:0.40}
     ],
-    waterZones: [{x:0.15,y:0.88,rx:0.11,ry:0.08},{x:0.88,y:0.18,rx:0.09,ry:0.08}],
+    waterZones: [
+      {x:0.18,y:0.42,rx:0.10,ry:0.08},{x:0.38,y:0.40,rx:0.12,ry:0.10},
+      {x:0.55,y:0.48,rx:0.10,ry:0.12},{x:0.72,y:0.58,rx:0.10,ry:0.09}
+    ],
+    obstacles: [{x:0.30,y:0.68,r:0.07},{x:0.80,y:0.32,r:0.07}],
     decorations: [
-      {type:'castle',x:0.52,y:0.34},{type:'rock',x:0.14,y:0.6},{type:'rock',x:0.76,y:0.62},
-      {type:'lake',x:0.15,y:0.88},{type:'lake',x:0.88,y:0.18}
+      {type:'stump',x:0.30,y:0.68},{type:'stump',x:0.80,y:0.32},
+      {type:'tree',x:0.08,y:0.18},{type:'tree',x:0.92,y:0.78},{type:'tree',x:0.12,y:0.88},
+      {type:'bush',x:0.50,y:0.18},{type:'bush',x:0.62,y:0.82},{type:'rock',x:0.48,y:0.62},
+      {type:'lake',x:0.38,y:0.40},{type:'lake',x:0.55,y:0.50}
+    ]
+  },
+  // 4) Candy Falls — wavy pink path, open space (easy)
+  {
+    name: 'Candy Falls', difficulty: 1, terrain: 'candy', pathStyle: 'candy',
+    path: [
+      {x:0.00,y:0.28},{x:0.18,y:0.22},{x:0.28,y:0.35},{x:0.22,y:0.50},
+      {x:0.32,y:0.62},{x:0.48,y:0.55},{x:0.55,y:0.38},{x:0.48,y:0.25},
+      {x:0.62,y:0.22},{x:0.75,y:0.32},{x:0.70,y:0.48},{x:0.78,y:0.62},
+      {x:0.68,y:0.75},{x:0.52,y:0.72},{x:0.42,y:0.82},{x:0.58,y:0.90},
+      {x:0.78,y:0.85},{x:0.90,y:0.72},{x:0.95,y:0.55},{x:0.98,y:0.40}
+    ],
+    waterZones: [{x:0.12,y:0.72,rx:0.09,ry:0.08}],
+    decorations: [
+      {type:'candy',x:0.15,y:0.12},{type:'candy',x:0.40,y:0.12},{type:'candy',x:0.85,y:0.15},
+      {type:'candy',x:0.10,y:0.88},{type:'candy',x:0.90,y:0.88},{type:'bush',x:0.55,y:0.48},
+      {type:'rock',x:0.35,y:0.40},{type:'rock',x:0.65,y:0.58},{type:'tree',x:0.92,y:0.28},
+      {type:'lake',x:0.12,y:0.72}
+    ]
+  },
+  // 5) Alpine Lake — gentle snow path around frozen water (still beginner)
+  {
+    name: 'Alpine Lake', difficulty: 1, terrain: 'snow', pathStyle: 'stone',
+    path: [
+      {x:0.00,y:0.30},{x:0.20,y:0.28},{x:0.35,y:0.40},{x:0.30,y:0.58},
+      {x:0.18,y:0.70},{x:0.28,y:0.85},{x:0.48,y:0.82},{x:0.62,y:0.70},
+      {x:0.72,y:0.55},{x:0.68,y:0.38},{x:0.78,y:0.25},{x:0.92,y:0.30},
+      {x:0.98,y:0.48}
+    ],
+    waterZones: [{x:0.50,y:0.48,rx:0.16,ry:0.14}],
+    decorations: [
+      {type:'tree',x:0.08,y:0.12},{type:'tree',x:0.18,y:0.15},{type:'tree',x:0.88,y:0.12},
+      {type:'tree',x:0.08,y:0.88},{type:'tree',x:0.90,y:0.85},{type:'rock',x:0.35,y:0.25},
+      {type:'rock',x:0.70,y:0.75},{type:'lake',x:0.50,y:0.48}
+    ]
+  },
+  // 6) Spa Pits — simple dual-bend beginner map with pools
+  {
+    name: 'Spa Pits', difficulty: 1, terrain: 'grass', pathStyle: 'stone',
+    path: [
+      {x:0.00,y:0.35},{x:0.25,y:0.32},{x:0.40,y:0.45},{x:0.35,y:0.62},
+      {x:0.22,y:0.72},{x:0.35,y:0.85},{x:0.55,y:0.80},{x:0.68,y:0.65},
+      {x:0.62,y:0.48},{x:0.72,y:0.32},{x:0.88,y:0.38},{x:0.95,y:0.55},
+      {x:0.98,y:0.70}
+    ],
+    waterZones: [
+      {x:0.18,y:0.50,rx:0.09,ry:0.10},{x:0.78,y:0.55,rx:0.09,ry:0.10}
+    ],
+    decorations: [
+      {type:'tree',x:0.10,y:0.15},{type:'tree',x:0.90,y:0.15},{type:'tree',x:0.50,y:0.15},
+      {type:'bush',x:0.50,y:0.55},{type:'rock',x:0.45,y:0.70},{type:'lake',x:0.18,y:0.50},
+      {type:'lake',x:0.78,y:0.55}
     ]
   }
 ];
@@ -1491,8 +1547,15 @@ function canPlace(x, y, type) {
   for (const p of gamePaths) if (distToPath(x, y, p) < 32) return false;
   for (const t of towers) if (dist(x, y, t.x, t.y) < 40) return false;
   const map = MAPS[selectedMap];
-  // Stump center blocked for everyone
-  if (map.name === 'Tree Stump' && dist(x, y, W * 0.5, 50 + 0.5 * (H - 170)) < 55) return false;
+  // Map obstacles (rock piles, stumps) block placement
+  if (map.obstacles) {
+    const mapTop = 50, mapH = H - 170;
+    for (const o of map.obstacles) {
+      const ox = o.x * W, oy = mapTop + o.y * mapH;
+      const or = (o.r || 0.08) * Math.min(W, mapH);
+      if (dist(x, y, ox, oy) < or + 18) return false;
+    }
+  }
   const water = isOnWater(x, y);
   if (def && def.waterOnly) {
     if (!water) return false; // boat / sub: water only
@@ -1549,6 +1612,8 @@ function towerPanelX() {
 function terrainTileKeys(terrain) {
   switch (terrain) {
     case 'snow': return ['tile_snow', 'tile_snow_alt'];
+    case 'sand': return ['tile_sand', 'tile_sand', 'tile_dirt'];
+    case 'candy': return ['tile_grass', 'tile_grass_alt'];
     case 'lava': return ['tile_lava_base', 'tile_lava'];
     case 'dark': return ['tile_dark', 'tile_dark_alt'];
     default: return ['tile_grass', 'tile_grass_alt'];
@@ -1557,17 +1622,24 @@ function terrainTileKeys(terrain) {
 function terrainFillColor(terrain) {
   switch (terrain) {
     case 'snow': return '#dce9f5';
+    case 'sand': return '#e8c97a';
+    case 'candy': return '#4caf50';
     case 'lava': return '#3a201c';
     case 'dark': return '#2a2e48';
-    default: return '#5cb04a';
+    default: return '#5cb04a'; // bright BTD meadow green
   }
 }
-function pathColors(terrain) {
-  switch (terrain) {
-    case 'snow': return { edge: '#8aa0b8', fill: '#c5d4e4', dash: 'rgba(255,255,255,0.35)' };
-    case 'lava': return { edge: '#4a2010', fill: '#6b3a28', dash: 'rgba(255,140,60,0.25)' };
-    case 'dark': return { edge: '#1a1a2e', fill: '#3d4260', dash: 'rgba(180,160,255,0.2)' };
-    default: return { edge: '#8b6914', fill: '#d2b48c', dash: 'rgba(255,255,255,0.22)' };
+function pathColors(map) {
+  const style = (map && map.pathStyle) || map;
+  switch (style) {
+    case 'stone': return { edge: '#5a5a5a', fill: '#9e9e9e', dash: 'rgba(255,255,255,0.28)', width: 42 };
+    case 'road': return { edge: '#2a2a2a', fill: '#4a4a4a', dash: 'rgba(255,220,40,0.85)', width: 44 };
+    case 'candy': return { edge: '#c2185b', fill: '#ff8fb8', dash: 'rgba(255,255,255,0.55)', width: 42 };
+    case 'snow': return { edge: '#8aa0b8', fill: '#c5d4e4', dash: 'rgba(255,255,255,0.35)', width: 40 };
+    case 'sand': return { edge: '#2a2a2a', fill: '#4a4a4a', dash: 'rgba(255,220,40,0.85)', width: 44 };
+    case 'lava': return { edge: '#4a2010', fill: '#6b3a28', dash: 'rgba(255,140,60,0.25)', width: 40 };
+    case 'dark': return { edge: '#1a1a2e', fill: '#3d4260', dash: 'rgba(180,160,255,0.2)', width: 40 };
+    default: return { edge: '#6b6b6b', fill: '#a0a0a0', dash: 'rgba(255,255,255,0.25)', width: 40 };
   }
 }
 function buildMapCache() {
@@ -1582,9 +1654,9 @@ function buildMapCache() {
   // solid base (no seams)
   g.fillStyle = terrainFillColor(map.terrain);
   g.fillRect(0, 0, off.width, off.height);
-  // soft tile pattern (low contrast, clean)
+  // soft tile pattern
   const keys = terrainTileKeys(map.terrain);
-  g.globalAlpha = 0.55;
+  g.globalAlpha = map.terrain === 'candy' ? 0.35 : 0.5;
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
       const key = keys[(row * 3 + col * 2) % keys.length];
@@ -1593,41 +1665,74 @@ function buildMapCache() {
     }
   }
   g.globalAlpha = 1;
-  // soft vignette for polish
+  // candy overlay tint
+  if (map.terrain === 'candy') {
+    g.fillStyle = 'rgba(100,200,80,0.15)';
+    g.fillRect(0, 0, W, mapH);
+  }
+  // water zones under path (ponds / river)
+  if (map.waterZones) {
+    for (const z of map.waterZones) {
+      const cx = z.x * W, cy = z.y * mapH;
+      const rx = (z.rx || 0.1) * W, ry = (z.ry || 0.1) * mapH;
+      const grd = g.createRadialGradient(cx - rx * 0.2, cy - ry * 0.2, 4, cx, cy, Math.max(rx, ry));
+      grd.addColorStop(0, map.terrain === 'snow' ? '#e3f2fd' : '#4fc3f7');
+      grd.addColorStop(0.55, map.terrain === 'snow' ? '#90caf9' : '#0288d1');
+      grd.addColorStop(1, map.terrain === 'snow' ? '#64b5f6' : '#01579b');
+      g.fillStyle = grd;
+      g.beginPath(); g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = 'rgba(255,255,255,0.35)'; g.lineWidth = 2;
+      g.beginPath(); g.ellipse(cx, cy, rx * 0.92, ry * 0.92, 0, 0, Math.PI * 2); g.stroke();
+    }
+  }
+  // soft vignette
   const vg = g.createRadialGradient(W/2, mapH/2, mapH*0.2, W/2, mapH/2, mapH*0.85);
   vg.addColorStop(0, 'rgba(0,0,0,0)');
-  vg.addColorStop(1, 'rgba(0,0,0,0.12)');
+  vg.addColorStop(1, 'rgba(0,0,0,0.10)');
   g.fillStyle = vg;
   g.fillRect(0, 0, W, mapH);
 
-  const pc = pathColors(map.terrain);
-  // clean path ribbons
+  const pc = pathColors(map);
+  const pw = pc.width || 40;
+  // clean path ribbons (stone / road / candy)
   for (const pts of gamePaths) {
+    g.lineCap = 'round'; g.lineJoin = 'round';
     // shadow
-    g.strokeStyle = 'rgba(0,0,0,0.18)';
-    g.lineWidth = 44; g.lineCap = 'round'; g.lineJoin = 'round';
+    g.strokeStyle = 'rgba(0,0,0,0.20)';
+    g.lineWidth = pw + 6;
     g.beginPath();
     g.moveTo(pts[0].x + 2, pts[0].y - mapTop + 3);
     for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x + 2, pts[i].y - mapTop + 3);
     g.stroke();
     // outer edge
     g.strokeStyle = pc.edge;
-    g.lineWidth = 40;
+    g.lineWidth = pw;
     g.beginPath();
     g.moveTo(pts[0].x, pts[0].y - mapTop);
     for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x, pts[i].y - mapTop);
     g.stroke();
     // fill
     g.strokeStyle = pc.fill;
-    g.lineWidth = 30;
+    g.lineWidth = pw - 10;
     g.beginPath();
     g.moveTo(pts[0].x, pts[0].y - mapTop);
     for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x, pts[i].y - mapTop);
     g.stroke();
-    // center dashes
+    // stone block look: short segments
+    if (map.pathStyle === 'stone') {
+      g.strokeStyle = 'rgba(0,0,0,0.12)';
+      g.lineWidth = 1;
+      g.setLineDash([18, 10]);
+      g.beginPath();
+      g.moveTo(pts[0].x, pts[0].y - mapTop);
+      for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x, pts[i].y - mapTop);
+      g.stroke();
+      g.setLineDash([]);
+    }
+    // center dashes (road yellow / candy white)
     g.strokeStyle = pc.dash;
-    g.lineWidth = 2;
-    g.setLineDash([10, 12]);
+    g.lineWidth = map.pathStyle === 'road' ? 3 : 2;
+    g.setLineDash(map.pathStyle === 'road' ? [14, 16] : [10, 12]);
     g.beginPath();
     g.moveTo(pts[0].x, pts[0].y - mapTop);
     for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x, pts[i].y - mapTop);
@@ -1682,19 +1787,35 @@ function drawDecoTo(g, type, x, y, terrain) {
     case 'tree_star': draw('tile_tree_star', 58); break;
     case 'bush': draw('tile_bush', 40); break;
     case 'rock': draw('tile_rock1', 40); break;
+    case 'cactus': {
+      // desert cactus from tree recolor-ish stacked ovals
+      g.fillStyle = '#43a047';
+      g.beginPath(); g.ellipse(x, y, 10, 28, 0, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.ellipse(x - 14, y - 6, 8, 16, -0.5, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.ellipse(x + 14, y - 2, 8, 14, 0.5, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#e65100';
+      g.beginPath(); g.ellipse(x, y - 30, 8, 6, 0, 0, Math.PI * 2); g.fill();
+      break;
+    }
+    case 'candy': {
+      const cols = ['#e53935', '#ffeb3b', '#ab47bc', '#29b6f6', '#ff7043'];
+      g.fillStyle = cols[Math.abs(Math.floor(x * 3 + y) % cols.length)];
+      g.beginPath(); g.arc(x, y, 12, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#fff';
+      g.beginPath(); g.arc(x - 3, y - 3, 3, 0, Math.PI * 2); g.fill();
+      break;
+    }
     case 'stump':
       draw('k133', 80);
+      // rock pile overlay for Logs-style centers
+      draw('tile_rock1', 36);
+      draw('tile_rock2', 28);
       break;
     case 'lake': {
-      const im = img('tile_water');
-      if (im) {
-        g.globalAlpha = 0.85;
-        g.drawImage(im, x - 90, y - 55, 180, 110);
-        g.globalAlpha = 1;
-      }
-      g.strokeStyle = 'rgba(255,255,255,0.25)';
-      g.lineWidth = 2;
-      g.beginPath(); g.ellipse(x, y, 88, 52, 0, 0, Math.PI*2); g.stroke();
+      // water already drawn from waterZones; optional lily pads
+      g.fillStyle = 'rgba(76,175,80,0.55)';
+      g.beginPath(); g.ellipse(x - 12, y + 4, 10, 6, 0.3, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.ellipse(x + 14, y - 6, 8, 5, -0.2, 0, Math.PI * 2); g.fill();
       break;
     }
     case 'castle':
@@ -1794,7 +1915,7 @@ function endRound() {
 }
 function winGame() {
   gameState = State.VICTORY; sfx('victory');
-  if (selectedMap < 4) {
+  if (selectedMap < MAPS.length - 1) {
     unlockedMaps[selectedMap + 1] = true;
     try { localStorage.setItem('md6_unlocked', JSON.stringify(unlockedMaps)); } catch(e) {}
   }
@@ -2559,7 +2680,7 @@ function drawVictory() {
   ctx.fillStyle = '#fff'; ctx.font = '17px Segoe UI';
   ctx.fillText(MAPS[selectedMap].name + ' cleared!', W/2, H/2-50);
   ctx.fillText('Popped: ' + totalPopped, W/2, H/2-20);
-  if (selectedMap < 4) {
+  if (selectedMap < MAPS.length - 1) {
     ctx.fillStyle = '#81c784';
     ctx.fillText('Unlocked: ' + MAPS[selectedMap+1].name, W/2, H/2+20);
   }
@@ -2831,12 +2952,19 @@ function initBtdUi() {
 }
 
 function mapThumbFor(i) {
-  // Prefer sunny grove art; tint via CSS filter per map
+  // Shared preview art; CSS filters approximate terrain of beginner maps
   return BTD_BASE + 'sunny-grove-map.png';
 }
 function mapFilterFor(i) {
-  const f = ['none', 'hue-rotate(40deg) saturate(1.1)', 'hue-rotate(180deg) brightness(1.15)',
-    'hue-rotate(-20deg) saturate(1.4) brightness(.85)', 'hue-rotate(260deg) brightness(.7)'];
+  // Match beginner map themes: grass, desert, logs, candy, snow, spa
+  const f = [
+    'none',
+    'hue-rotate(-25deg) saturate(1.35) brightness(1.1)', // desert
+    'hue-rotate(25deg) saturate(0.95) brightness(0.95)', // logs/river green
+    'hue-rotate(300deg) saturate(1.5) brightness(1.05)', // candy pink
+    'hue-rotate(180deg) brightness(1.2) saturate(0.7)', // alpine snow
+    'hue-rotate(10deg) saturate(1.1) brightness(1.05)'  // spa
+  ];
   return f[i % f.length];
 }
 
