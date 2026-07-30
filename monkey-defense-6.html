@@ -169,7 +169,7 @@ canvas{display:block;margin:0 auto;cursor:default;background:#0a0a14;position:re
 .btd-tower-cell.locked{filter:brightness(.55);cursor:not-allowed}
 .btd-tower-cell.locked:hover{transform:none;box-shadow:none}
 .btd-tower-cell.cant-afford .btd-price{color:#e53935}
-.btd-tower-cell img{width:72%;height:72%;object-fit:contain;pointer-events:none}
+.btd-tower-cell img{width:78%;height:78%;object-fit:contain;pointer-events:none;background:transparent}
 .btd-price{font-size:clamp(12px,1.1vw,15px);font-weight:900;color:#2e7d32;text-shadow:0 1px 0 rgba(255,255,255,.5);margin-top:2px}
 .btd-lock{
   position:absolute;bottom:6px;left:50%;transform:translateX(-50%);
@@ -297,6 +297,7 @@ const TOWER_SPRITE = {
   sniper: 'towers/sniper_monkey/idle.png',
   ninja: 'towers/ninja_monkey/idle.png',
   water: 'towers/water_monkey/idle.png',
+  sub: 'towers/sub_monkey/idle.png',
   boomer: 'towers/boomerang_monkey/idle.png',
   glue: 'towers/glue_gunner/idle.png',
   bomb: 'towers/bomb_shooter/idle.png',
@@ -308,7 +309,7 @@ const TOWER_SPRITE = {
 };
 const TOWER_DIRS = {
   dart: 'dart_monkey', sniper: 'sniper_monkey', ninja: 'ninja_monkey',
-  water: 'water_monkey', boomer: 'boomerang_monkey', glue: 'glue_gunner',
+  water: 'water_monkey', sub: 'sub_monkey', boomer: 'boomerang_monkey', glue: 'glue_gunner',
   bomb: 'bomb_shooter', ice: 'ice_monkey', wizard: 'wizard_monkey',
   farm: 'banana_farm', super: 'super_monkey', tack: 'tack_shooter'
 };
@@ -466,139 +467,154 @@ const BLOON_TYPES = {
 
 const TOWER_DEFS = {
   dart: {
-    name: 'Dart Monkey', icon: '🏹', cost: 200, range: 120, fireRate: 0.65, damage: 1, pierce: 1,
-    projSpeed: 420, projType: 'dart', special: null, canPopLead: false, canPopFrozen: true, canPopPurple: true,
+    name: 'Dart Monkey', icon: '🏹', cost: 200, range: 115, fireRate: 0.75, damage: 1, pierce: 1,
+    projSpeed: 400, projType: 'dart', special: null, canPopLead: false, canPopFrozen: true, canPopPurple: true,
     color: '#66bb6a', spriteSize: 58,
     upgrades: [
-      { name: 'Sharp Shots', cost: 150, desc: '+1 pierce', changes: { pierce: 1 } },
-      { name: 'Razordarts', cost: 300, desc: '+2 pierce, faster', changes: { pierce: 2, fireRate: -0.12 } },
-      { name: 'Spike-o-pult', cost: 600, desc: 'Hits 8 bloons', changes: { pierce: 5, damage: 1, fireRate: 0.2, projType: 'spike' } }
+      { name: 'Sharp Shots', cost: 140, desc: '+1 pierce', changes: { pierce: 1 } },
+      { name: 'Razordarts', cost: 280, desc: '+1 pierce, faster', changes: { pierce: 1, fireRate: -0.1 } },
+      { name: 'Spike-o-pult', cost: 550, desc: 'Hits 5 bloons', changes: { pierce: 3, fireRate: 0.15, projType: 'spike' } }
     ]
   },
   sniper: {
-    name: 'Sniper Monkey', icon: '🎯', cost: 350, range: 9999, fireRate: 1.4, damage: 2, pierce: 1,
+    name: 'Sniper Monkey', icon: '🎯', cost: 350, range: 9999, fireRate: 1.55, damage: 2, pierce: 1,
     projSpeed: 2000, projType: 'sniper', special: 'infinite_range', canPopLead: false, canPopFrozen: true, canPopPurple: true,
     canSeeCamo: true, color: '#43a047', spriteSize: 56,
     upgrades: [
       { name: 'Full Metal Jacket', cost: 300, desc: 'Can pop Lead', changes: { canPopLead: true, damage: 1 } },
-      { name: 'Large Calibre', cost: 500, desc: '+3 damage', changes: { damage: 3 } },
-      { name: 'Deadly Precision', cost: 800, desc: 'Massive damage', changes: { damage: 8, fireRate: -0.2, canPopLead: true } }
+      { name: 'Large Calibre', cost: 450, desc: '+2 damage', changes: { damage: 2 } },
+      { name: 'Deadly Precision', cost: 750, desc: 'High damage', changes: { damage: 5, fireRate: -0.15, canPopLead: true } }
     ]
   },
   ninja: {
-    name: 'Ninja Monkey', icon: '🥷', cost: 500, range: 145, fireRate: 0.62, damage: 1, pierce: 2,
-    projSpeed: 500, projType: 'shuriken', special: null, canPopLead: false, canPopFrozen: true, canPopPurple: true,
+    name: 'Ninja Monkey', icon: '🥷', cost: 500, range: 130, fireRate: 0.72, damage: 1, pierce: 1,
+    projSpeed: 460, projType: 'shuriken', special: null, canPopLead: false, canPopFrozen: true, canPopPurple: true,
     canSeeCamo: true, color: '#37474f', spriteSize: 56,
     upgrades: [
-      { name: 'Ninja Discipline', cost: 300, desc: 'Faster throwing', changes: { fireRate: -0.18 } },
-      { name: 'Sharp Shurikens', cost: 350, desc: '+2 pierce, +range', changes: { pierce: 2, range: 25 } },
-      { name: 'Seeking Shuriken', cost: 900, desc: 'Homes on camo & all', changes: { seeking: true, damage: 1, pierce: 1 } }
+      { name: 'Ninja Discipline', cost: 280, desc: 'Faster throwing', changes: { fireRate: -0.15 } },
+      { name: 'Sharp Shurikens', cost: 320, desc: '+1 pierce, +range', changes: { pierce: 1, range: 20 } },
+      { name: 'Seeking Shuriken', cost: 850, desc: 'Homes on targets', changes: { seeking: true, pierce: 1 } }
     ]
   },
+  // Boat (Buccaneer) — WATER ONLY
   water: {
-    name: 'Water Monkey', icon: '⚓', cost: 450, range: 155, fireRate: 0.75, damage: 1, pierce: 3,
-    projSpeed: 380, projType: 'water', special: null, canPopLead: false, canPopFrozen: true, canPopPurple: true,
-    color: '#29b6f6', spriteSize: 56,
+    name: 'Boat Monkey', icon: '⛵', cost: 500, range: 160, fireRate: 0.85, damage: 1, pierce: 2,
+    projSpeed: 360, projType: 'water', special: null, canPopLead: false, canPopFrozen: true, canPopPurple: true,
+    waterOnly: true, color: '#29b6f6', spriteSize: 58,
     upgrades: [
-      { name: 'Faster Firing', cost: 250, desc: 'Shoot quicker', changes: { fireRate: -0.2 } },
-      { name: 'Grape Shot', cost: 400, desc: '+2 pierce, +range', changes: { pierce: 2, range: 30 } },
-      { name: 'Cannon Ship', cost: 900, desc: 'AoE splash water', changes: { aoeRadius: 35, damage: 1, special: 'aoe' } }
+      { name: 'Faster Firing', cost: 280, desc: 'Shoot quicker', changes: { fireRate: -0.15 } },
+      { name: 'Grape Shot', cost: 400, desc: '+1 pierce, +range', changes: { pierce: 1, range: 25 } },
+      { name: 'Cannon Ship', cost: 950, desc: 'Small splash', changes: { aoeRadius: 28, damage: 1 } }
+    ]
+  },
+  // Sub (Monkey Sub) — WATER ONLY
+  sub: {
+    name: 'Sub Monkey', icon: '🤿', cost: 375, range: 140, fireRate: 0.95, damage: 1, pierce: 1,
+    projSpeed: 420, projType: 'water', special: null, canPopLead: false, canPopFrozen: true, canPopPurple: true,
+    waterOnly: true, color: '#fdd835', spriteSize: 56,
+    upgrades: [
+      { name: 'Barbed Darts', cost: 200, desc: '+1 pierce', changes: { pierce: 1 } },
+      { name: 'Twin Guns', cost: 350, desc: 'Faster shots', changes: { fireRate: -0.25 } },
+      { name: 'Ballistic Missile', cost: 900, desc: 'AoE + Lead pop', changes: { aoeRadius: 32, canPopLead: true, damage: 1 } }
     ]
   },
   boomer: {
-    name: 'Boomerang', icon: '🪃', cost: 325, range: 135, fireRate: 0.85, damage: 1, pierce: 4,
-    projSpeed: 340, projType: 'boomerang', special: null, canPopLead: false, canPopFrozen: true, canPopPurple: true,
+    name: 'Boomerang', icon: '🪃', cost: 325, range: 120, fireRate: 1.05, damage: 1, pierce: 2,
+    projSpeed: 320, projType: 'boomerang', special: null, canPopLead: false, canPopFrozen: true, canPopPurple: true,
     color: '#8d6e63', spriteSize: 56,
     upgrades: [
-      { name: 'Improved Rangs', cost: 200, desc: '+2 pierce', changes: { pierce: 2 } },
-      { name: 'Glaives', cost: 350, desc: 'Faster + damage', changes: { fireRate: -0.2, damage: 1 } },
-      { name: 'Ricochet', cost: 800, desc: 'Massive pierce', changes: { pierce: 8, range: 20 } }
+      { name: 'Improved Rangs', cost: 200, desc: '+1 pierce', changes: { pierce: 1 } },
+      { name: 'Glaives', cost: 320, desc: 'Slightly faster', changes: { fireRate: -0.12 } },
+      { name: 'Ricochet', cost: 700, desc: '+3 pierce', changes: { pierce: 3, range: 15 } }
     ]
   },
   glue: {
-    name: 'Glue Gunner', icon: '🧪', cost: 275, range: 110, fireRate: 1.1, damage: 0, pierce: 1,
-    projSpeed: 320, projType: 'glue', special: 'glue', glueSlow: 0.45, glueTime: 3.5,
+    name: 'Glue Gunner', icon: '🧪', cost: 275, range: 100, fireRate: 1.25, damage: 0, pierce: 1,
+    projSpeed: 300, projType: 'glue', special: 'glue', glueSlow: 0.55, glueTime: 2.8,
     canPopLead: false, canPopFrozen: true, canPopPurple: true,
     color: '#9ccc65', spriteSize: 56,
     upgrades: [
-      { name: 'Stickier Glue', cost: 200, desc: 'Slower & longer', changes: { glueSlow: 0.15, glueTime: 1.5 } },
-      { name: 'Glue Soak', cost: 350, desc: '+2 pierce', changes: { pierce: 2 } },
-      { name: 'Corrosive Glue', cost: 700, desc: 'Damages + melts', changes: { damage: 1, pierce: 2 } }
+      { name: 'Stickier Glue', cost: 180, desc: 'Slower & longer', changes: { glueSlow: 0.12, glueTime: 1.2 } },
+      { name: 'Glue Soak', cost: 300, desc: '+1 pierce', changes: { pierce: 1 } },
+      { name: 'Corrosive Glue', cost: 650, desc: 'Damages bloons', changes: { damage: 1, pierce: 1 } }
     ]
   },
   bomb: {
-    name: 'Bomb Shooter', icon: '💣', cost: 525, range: 130, fireRate: 1.1, damage: 1, pierce: 1,
-    projSpeed: 280, projType: 'bomb', special: 'aoe', aoeRadius: 40, canPopLead: true, canPopFrozen: true, canPopPurple: true,
+    name: 'Bomb Shooter', icon: '💣', cost: 525, range: 125, fireRate: 1.25, damage: 1, pierce: 1,
+    projSpeed: 270, projType: 'bomb', special: 'aoe', aoeRadius: 36, canPopLead: true, canPopFrozen: true, canPopPurple: true,
     color: '#78909c', spriteSize: 56,
     upgrades: [
-      { name: 'Bigger Bombs', cost: 350, desc: '+50% AoE radius', changes: { aoeRadius: 20 } },
-      { name: 'Heavy Bombs', cost: 600, desc: '+2 AoE damage', changes: { damage: 2 } },
-      { name: 'MOAB Mauler', cost: 900, desc: '10x vs MOAB', changes: { moabMul: 10, damage: 1 } }
+      { name: 'Bigger Bombs', cost: 320, desc: '+AoE radius', changes: { aoeRadius: 16 } },
+      { name: 'Heavy Bombs', cost: 550, desc: '+1 AoE damage', changes: { damage: 1 } },
+      { name: 'MOAB Mauler', cost: 900, desc: '8x vs MOAB', changes: { moabMul: 8, damage: 1 } }
     ]
   },
   ice: {
-    name: 'Ice Monkey', icon: '❄️', cost: 300, range: 80, fireRate: 1.8, damage: 0, pierce: 99,
-    projSpeed: 0, projType: 'freeze', special: 'freeze', freezeTime: 1.5, canPopLead: false, canPopFrozen: true, canPopPurple: true,
+    name: 'Ice Monkey', icon: '❄️', cost: 300, range: 75, fireRate: 2.0, damage: 0, pierce: 99,
+    projSpeed: 0, projType: 'freeze', special: 'freeze', freezeTime: 1.2, canPopLead: false, canPopFrozen: true, canPopPurple: true,
     color: '#4fc3f7', spriteSize: 56,
     upgrades: [
-      { name: 'Enhanced Freeze', cost: 200, desc: 'Freeze 2.5s', changes: { freezeTime: 1.0 } },
-      { name: 'Permafrost', cost: 450, desc: '50% slow after thaw', changes: { permafrost: true } },
-      { name: 'Arctic Wind', cost: 2000, desc: 'Huge radius, permanent slow', changes: { range: 60, arctic: true, freezeTime: 0.5 } }
+      { name: 'Enhanced Freeze', cost: 200, desc: 'Freeze 2s', changes: { freezeTime: 0.8 } },
+      { name: 'Permafrost', cost: 400, desc: 'Slow after thaw', changes: { permafrost: true } },
+      { name: 'Arctic Wind', cost: 1800, desc: 'Bigger slow aura', changes: { range: 45, arctic: true, freezeTime: 0.4 } }
     ]
   },
   wizard: {
-    name: 'Wizard Monkey', icon: '🔮', cost: 450, range: 140, fireRate: 0.8, damage: 1, pierce: 2,
-    projSpeed: 350, projType: 'magic', special: null, canPopLead: true, canPopFrozen: true, canPopPurple: false,
+    name: 'Wizard Monkey', icon: '🔮', cost: 450, range: 130, fireRate: 0.9, damage: 1, pierce: 1,
+    projSpeed: 340, projType: 'magic', special: null, canPopLead: true, canPopFrozen: true, canPopPurple: false,
     color: '#9c27b0', spriteSize: 58,
     upgrades: [
-      { name: 'Fireball', cost: 350, desc: 'Occasional AoE fireball', changes: { fireball: true } },
-      { name: 'Wall of Fire', cost: 600, desc: 'Places fire on path', changes: { wallOfFire: true } },
-      { name: 'Arcane Mastery', cost: 1200, desc: '2x speed, +3 pierce', changes: { fireRate: -0.4, pierce: 3, range: 30 } }
+      { name: 'Fireball', cost: 320, desc: 'Occasional AoE', changes: { fireball: true } },
+      { name: 'Wall of Fire', cost: 550, desc: 'Fire on path', changes: { wallOfFire: true } },
+      { name: 'Arcane Mastery', cost: 1100, desc: 'Faster + pierce', changes: { fireRate: -0.3, pierce: 2, range: 25 } }
     ]
   },
   farm: {
     name: 'Banana Farm', icon: '🍌', cost: 1000, range: 0, fireRate: 0, damage: 0, pierce: 0,
-    projSpeed: 0, projType: 'none', special: 'income', income: 80, canPopLead: false, canPopFrozen: false, canPopPurple: false,
+    projSpeed: 0, projType: 'none', special: 'income', income: 60, canPopLead: false, canPopFrozen: false, canPopPurple: false,
     color: '#fbc02d', spriteSize: 56,
     upgrades: [
-      { name: 'More Bananas', cost: 350, desc: '$120 / round', changes: { income: 40 } },
-      { name: 'Banana Plantation', cost: 700, desc: '$200 / round', changes: { income: 80 } },
-      { name: 'Banana Republic', cost: 1500, desc: '$400 / round', changes: { income: 200 } }
+      { name: 'More Bananas', cost: 350, desc: '$100 / round', changes: { income: 40 } },
+      { name: 'Banana Plantation', cost: 700, desc: '$160 / round', changes: { income: 60 } },
+      { name: 'Banana Republic', cost: 1400, desc: '$280 / round', changes: { income: 120 } }
     ]
   },
   super: {
-    name: 'Super Monkey', icon: '🦸', cost: 2500, range: 180, fireRate: 0.08, damage: 1, pierce: 1,
-    projSpeed: 600, projType: 'laser', special: null, canPopLead: false, canPopFrozen: false, canPopPurple: true,
+    name: 'Super Monkey', icon: '🦸', cost: 2800, range: 160, fireRate: 0.12, damage: 1, pierce: 1,
+    projSpeed: 580, projType: 'laser', special: null, canPopLead: false, canPopFrozen: false, canPopPurple: true,
     color: '#e53935', spriteSize: 58,
     upgrades: [
-      { name: 'Laser Blasts', cost: 2000, desc: 'Red lasers, pop frozen', changes: { canPopFrozen: true, projType: 'laser', damage: 1 } },
-      { name: 'Plasma Blasts', cost: 3500, desc: 'Green plasma, +3 pierce', changes: { pierce: 3, fireRate: -0.02, projType: 'plasma' } },
-      { name: 'Sun Avatar', cost: 6000, desc: '3 sun beams', changes: { sunAvatar: true, damage: 2, pierce: 2, fireRate: -0.02 } }
+      { name: 'Laser Blasts', cost: 2200, desc: 'Pop frozen', changes: { canPopFrozen: true, projType: 'laser', damage: 1 } },
+      { name: 'Plasma Blasts', cost: 3500, desc: '+2 pierce', changes: { pierce: 2, fireRate: -0.02, projType: 'plasma' } },
+      { name: 'Sun Avatar', cost: 6500, desc: '3 beams', changes: { sunAvatar: true, damage: 1, pierce: 1, fireRate: -0.02 } }
     ]
   },
   tack: {
-    name: 'Tack Shooter', icon: '📌', cost: 280, range: 70, fireRate: 1.0, damage: 1, pierce: 1,
-    projSpeed: 300, projType: 'tack', special: 'radial', tackCount: 8, canPopLead: false, canPopFrozen: true, canPopPurple: true,
+    name: 'Tack Shooter', icon: '📌', cost: 280, range: 65, fireRate: 1.15, damage: 1, pierce: 1,
+    projSpeed: 280, projType: 'tack', special: 'radial', tackCount: 8, canPopLead: false, canPopFrozen: true, canPopPurple: true,
     color: '#90a4ae', spriteSize: 56,
     upgrades: [
-      { name: 'Faster Shooting', cost: 200, desc: '+50% attack speed', changes: { fireRate: -0.33 } },
-      { name: 'Extra Range Tacks', cost: 250, desc: '+30% range, 10 tacks', changes: { range: 21, tackCount: 2 } },
-      { name: 'Tack Sprayer', cost: 500, desc: '16 tacks, faster', changes: { tackCount: 6, fireRate: -0.15 } }
+      { name: 'Faster Shooting', cost: 200, desc: '+35% speed', changes: { fireRate: -0.25 } },
+      { name: 'Extra Range Tacks', cost: 250, desc: '+range, 10 tacks', changes: { range: 18, tackCount: 2 } },
+      { name: 'Tack Sprayer', cost: 480, desc: '14 tacks', changes: { tackCount: 4, fireRate: -0.1 } }
     ]
   }
 };
-const TOWER_ORDER = ['dart', 'boomer', 'tack', 'sniper', 'ninja', 'water', 'glue', 'bomb', 'ice', 'wizard', 'farm', 'super'];
+const TOWER_ORDER = ['dart', 'boomer', 'tack', 'sniper', 'ninja', 'water', 'sub', 'glue', 'bomb', 'ice', 'wizard', 'farm', 'super'];
 
 // Paths use normalized 0–1 coords. Start/end stay inset so bloons enter/exit
 // on-screen at clear IN/OUT fort markers (never fly off the raw edge).
+// waterZones: normalized ellipses {x,y,rx,ry} in map space (same as path 0–1)
 const MAPS = [
   {
     name: 'Monkey Meadow', difficulty: 1, terrain: 'grass',
     path: [{x:0.02,y:0.45},{x:0.18,y:0.45},{x:0.28,y:0.25},{x:0.44,y:0.25},{x:0.54,y:0.55},{x:0.68,y:0.55},{x:0.78,y:0.3},{x:0.90,y:0.3},{x:0.93,y:0.48}],
+    waterZones: [{x:0.18,y:0.78,rx:0.12,ry:0.11},{x:0.72,y:0.78,rx:0.11,ry:0.10}],
     decorations: [
       {type:'tree',x:0.15,y:0.18},{type:'tree',x:0.4,y:0.72},{type:'tree',x:0.72,y:0.14},
       {type:'tree',x:0.82,y:0.72},{type:'bush',x:0.25,y:0.65},{type:'bush',x:0.58,y:0.18},
-      {type:'rock',x:0.48,y:0.78},{type:'tree_star',x:0.12,y:0.72}
+      {type:'rock',x:0.48,y:0.78},{type:'tree_star',x:0.12,y:0.72},
+      {type:'lake',x:0.18,y:0.78},{type:'lake',x:0.72,y:0.78}
     ]
   },
   {
@@ -608,9 +624,11 @@ const MAPS = [
       {x:0.72,y:0.5},{x:0.62,y:0.7},{x:0.48,y:0.8},{x:0.34,y:0.7},{x:0.28,y:0.5},
       {x:0.38,y:0.35},{x:0.52,y:0.3},{x:0.68,y:0.4},{x:0.82,y:0.52},{x:0.93,y:0.55}
     ],
+    waterZones: [{x:0.12,y:0.82,rx:0.10,ry:0.09},{x:0.88,y:0.22,rx:0.09,ry:0.08}],
     decorations: [
       {type:'stump',x:0.5,y:0.5},{type:'tree',x:0.1,y:0.14},{type:'tree',x:0.88,y:0.18},
-      {type:'tree',x:0.14,y:0.82},{type:'bush',x:0.2,y:0.25},{type:'rock',x:0.78,y:0.78}
+      {type:'tree',x:0.14,y:0.82},{type:'bush',x:0.2,y:0.25},{type:'rock',x:0.78,y:0.78},
+      {type:'lake',x:0.12,y:0.82},{type:'lake',x:0.88,y:0.22}
     ]
   },
   {
@@ -620,6 +638,7 @@ const MAPS = [
       {x:0.68,y:0.28},{x:0.82,y:0.28},{x:0.88,y:0.48},{x:0.82,y:0.68},{x:0.48,y:0.68},
       {x:0.2,y:0.68},{x:0.16,y:0.82},{x:0.4,y:0.88},{x:0.72,y:0.88},{x:0.93,y:0.88}
     ],
+    waterZones: [{x:0.5,y:0.4,rx:0.22,ry:0.18}],
     decorations: [
       {type:'lake',x:0.5,y:0.4},{type:'tree',x:0.1,y:0.14},{type:'tree',x:0.88,y:0.14},
       {type:'rock',x:0.2,y:0.52},{type:'rock',x:0.78,y:0.52}
@@ -629,8 +648,11 @@ const MAPS = [
     name: 'Lava Fields', difficulty: 3, terrain: 'lava', multiPath: true,
     path: [{x:0.02,y:0.25},{x:0.28,y:0.25},{x:0.42,y:0.4},{x:0.52,y:0.5},{x:0.68,y:0.55},{x:0.84,y:0.55},{x:0.93,y:0.55}],
     path2: [{x:0.02,y:0.75},{x:0.28,y:0.75},{x:0.42,y:0.6},{x:0.52,y:0.5},{x:0.68,y:0.55},{x:0.84,y:0.55},{x:0.93,y:0.55}],
+    // Cool spring pool (still "water" for boat/sub)
+    waterZones: [{x:0.12,y:0.5,rx:0.09,ry:0.12}],
     decorations: [
-      {type:'rock',x:0.38,y:0.18},{type:'rock',x:0.82,y:0.78},{type:'rock',x:0.18,y:0.5}
+      {type:'rock',x:0.38,y:0.18},{type:'rock',x:0.82,y:0.78},{type:'rock',x:0.18,y:0.5},
+      {type:'lake',x:0.12,y:0.5}
     ]
   },
   {
@@ -640,8 +662,10 @@ const MAPS = [
       {x:0.68,y:0.2},{x:0.68,y:0.55},{x:0.34,y:0.55},{x:0.34,y:0.75},{x:0.58,y:0.75},
       {x:0.58,y:0.88},{x:0.82,y:0.88},{x:0.82,y:0.42},{x:0.93,y:0.42}
     ],
+    waterZones: [{x:0.15,y:0.88,rx:0.11,ry:0.08},{x:0.88,y:0.18,rx:0.09,ry:0.08}],
     decorations: [
-      {type:'castle',x:0.52,y:0.34},{type:'rock',x:0.14,y:0.6},{type:'rock',x:0.76,y:0.62}
+      {type:'castle',x:0.52,y:0.34},{type:'rock',x:0.14,y:0.6},{type:'rock',x:0.76,y:0.62},
+      {type:'lake',x:0.15,y:0.88},{type:'lake',x:0.88,y:0.18}
     ]
   }
 ];
@@ -650,26 +674,27 @@ function buildRounds() {
   // BTD6-inspired: slow start, low density early, bosses later. Spacing (s) high = slower spawn.
   const R = [];
   // ── Early game (1–20): gentle, learn towers ──
-  R[1]=[{t:'red',c:10,s:1.0}];
-  R[2]=[{t:'red',c:15,s:0.95}];
-  R[3]=[{t:'red',c:12,s:0.9},{t:'blue',c:3,s:1.0,d:3}];
-  R[4]=[{t:'red',c:18,s:0.85},{t:'blue',c:6,s:0.95,d:2}];
-  R[5]=[{t:'blue',c:12,s:0.9}];
-  R[6]=[{t:'blue',c:15,s:0.85},{t:'green',c:4,s:1.0,d:2}];
-  R[7]=[{t:'red',c:15,s:0.75},{t:'blue',c:10,s:0.85,d:1},{t:'green',c:5,s:0.95,d:3}];
-  R[8]=[{t:'green',c:12,s:0.85}];
-  R[9]=[{t:'blue',c:18,s:0.75},{t:'green',c:8,s:0.85,d:2}];
-  R[10]=[{t:'green',c:18,s:0.75}];
-  R[11]=[{t:'green',c:12,s:0.7},{t:'yellow',c:4,s:0.95,d:2}];
-  R[12]=[{t:'yellow',c:8,s:0.85}];
-  R[13]=[{t:'yellow',c:10,s:0.8},{t:'pink',c:3,s:1.0,d:2}];
-  R[14]=[{t:'pink',c:6,s:0.9},{t:'green',c:12,s:0.7,d:1}];
-  R[15]=[{t:'yellow',c:12,s:0.75},{t:'pink',c:6,s:0.85,d:2}];
-  R[16]=[{t:'pink',c:10,s:0.75}];
-  R[17]=[{t:'pink',c:12,s:0.7},{t:'yellow',c:10,s:0.7,d:1}];
-  R[18]=[{t:'green',c:20,s:0.55},{t:'pink',c:8,s:0.75,d:2}]; // first camo teaser next
-  R[19]=[{t:'pink',c:14,s:0.65},{t:'yellow',c:12,s:0.65,d:1}];
-  R[20]=[{t:'pink',c:16,s:0.6},{t:'pink',c:4,s:0.9,d:4,camo:true}];
+  // BTD6-like early: few bloons, long gaps
+  R[1]=[{t:'red',c:6,s:1.15}];
+  R[2]=[{t:'red',c:10,s:1.05}];
+  R[3]=[{t:'red',c:8,s:1.0},{t:'blue',c:2,s:1.15,d:4}];
+  R[4]=[{t:'red',c:12,s:0.95},{t:'blue',c:4,s:1.05,d:3}];
+  R[5]=[{t:'blue',c:8,s:1.0}];
+  R[6]=[{t:'blue',c:10,s:0.95},{t:'green',c:3,s:1.1,d:3}];
+  R[7]=[{t:'red',c:10,s:0.9},{t:'blue',c:6,s:0.95,d:2},{t:'green',c:3,s:1.05,d:4}];
+  R[8]=[{t:'green',c:8,s:0.95}];
+  R[9]=[{t:'blue',c:12,s:0.85},{t:'green',c:5,s:0.95,d:2}];
+  R[10]=[{t:'green',c:12,s:0.85}];
+  R[11]=[{t:'green',c:8,s:0.85},{t:'yellow',c:3,s:1.05,d:3}];
+  R[12]=[{t:'yellow',c:6,s:0.95}];
+  R[13]=[{t:'yellow',c:7,s:0.9},{t:'pink',c:2,s:1.1,d:3}];
+  R[14]=[{t:'pink',c:4,s:1.0},{t:'green',c:8,s:0.8,d:2}];
+  R[15]=[{t:'yellow',c:8,s:0.85},{t:'pink',c:4,s:0.95,d:2}];
+  R[16]=[{t:'pink',c:7,s:0.85}];
+  R[17]=[{t:'pink',c:8,s:0.8},{t:'yellow',c:6,s:0.85,d:2}];
+  R[18]=[{t:'green',c:12,s:0.7},{t:'pink',c:5,s:0.85,d:2}];
+  R[19]=[{t:'pink',c:10,s:0.75},{t:'yellow',c:8,s:0.75,d:1}];
+  R[20]=[{t:'pink',c:12,s:0.7},{t:'pink',c:3,s:1.0,d:5,camo:true}];
   // ── Mid (21–40): specials + first MOAB on 40 ──
   R[21]=[{t:'black',c:4,s:0.9},{t:'pink',c:12,s:0.65,d:1}];
   R[22]=[{t:'white',c:4,s:0.9},{t:'black',c:4,s:0.9,d:2}];
@@ -924,12 +949,13 @@ function popBloon(b) {
   if (!b.alive) return;
   b.alive = false;
   const def = BLOON_TYPES[b.type];
+  // Every pop pays at least $1 (BTD-style cash per layer)
   const cashMul = (DIFFS[selectedDiff] && DIFFS[selectedDiff].cashMul) || 1;
-  const gained = Math.max(0, Math.floor(def.cash * cashMul));
+  const gained = Math.max(1, Math.round((def.cash || 1) * cashMul));
   cash += gained; totalPopped++;
   if (def.moab) { spawnExplosion(b.x, b.y, def.radius); sfx('explode'); }
   else { spawnPop(b.x, b.y); sfx('pop'); }
-  if (gained > 0) spawnFloat(b.x, b.y - 10, '+$' + gained, '#ffd700');
+  spawnFloat(b.x, b.y - 10, '+$' + gained, '#ffd700');
   const children = def.children;
   if (children && children.length) {
     children.forEach((ct, i) => {
@@ -998,6 +1024,7 @@ function applyUpgrade(tower) {
   if (c.moabMul) tower.moabMul = c.moabMul;
   if (c.canPopLead) tower.canPopLead = true;
   if (c.canPopFrozen) tower.canPopFrozen = true;
+  // water/sub aoe upgrades keep projType
   if (c.projType) tower.projType = c.projType;
   if (c.fireball) tower.fireball = true;
   if (c.wallOfFire) tower.wallOfFire = true;
@@ -1119,7 +1146,25 @@ function overSidebar(x) {
   if (sidebarSide === 'right') return screenX > window.innerWidth - SIDEBAR_CSS_W - pad;
   return screenX < SIDEBAR_CSS_W + pad;
 }
-function canPlace(x, y) {
+/** Map water ellipse in game coords. */
+function isOnWater(x, y) {
+  const map = MAPS[selectedMap];
+  if (!map || !map.waterZones || !map.waterZones.length) return false;
+  const mapTop = 50, mapH = H - 170;
+  for (const z of map.waterZones) {
+    const cx = z.x * W;
+    const cy = mapTop + z.y * mapH;
+    const rx = (z.rx != null ? z.rx : z.r || 0.1) * W;
+    const ry = (z.ry != null ? z.ry : z.r || 0.1) * mapH;
+    const dx = (x - cx) / Math.max(8, rx);
+    const dy = (y - cy) / Math.max(8, ry);
+    if (dx * dx + dy * dy <= 1) return true;
+  }
+  return false;
+}
+function canPlace(x, y, type) {
+  type = type || placingTower;
+  const def = type ? TOWER_DEFS[type] : null;
   // Leave room for the docked BTD sidebar (may overhang map)
   if (y < 55 || y > H - 30) return false;
   if (overSidebar(x)) return false;
@@ -1127,8 +1172,14 @@ function canPlace(x, y) {
   for (const p of gamePaths) if (distToPath(x, y, p) < 32) return false;
   for (const t of towers) if (dist(x, y, t.x, t.y) < 40) return false;
   const map = MAPS[selectedMap];
-  if (map.name === 'Tree Stump' && dist(x, y, W*0.5, (H-140)*0.5+50) < 55) return false;
-  if (map.name === 'Frozen Lake' && dist(x, y, W*0.5, (H-140)*0.4+50) < 70) return false;
+  // Stump center blocked for everyone
+  if (map.name === 'Tree Stump' && dist(x, y, W * 0.5, 50 + 0.5 * (H - 170)) < 55) return false;
+  const water = isOnWater(x, y);
+  if (def && def.waterOnly) {
+    if (!water) return false; // boat / sub: water only
+  } else if (water) {
+    return false; // land towers cannot sit on water
+  }
   return true;
 }
 /**
@@ -1696,7 +1747,7 @@ function handleClick() {
       // Ignore clicks on sidebar strip
       if (overSidebar(mx)) return;
       if (my > 55 && my < H - 20) {
-        if (canPlace(mx, my)) {
+        if (canPlace(mx, my, placingTower)) {
           const cost = TOWER_DEFS[placingTower].cost;
           if (cash >= cost) {
             cash -= cost; totalSpent += cost;
@@ -1842,7 +1893,7 @@ function drawTower(t, preview) {
   // Soft type aura under body
   const aura = {
     dart: '#81c784', boomer: '#a1887f', sniper: '#66bb6a', ninja: '#546e7a',
-    water: '#4fc3f7', glue: '#9ccc65', bomb: '#90a4ae', ice: '#4fc3f7',
+    water: '#4fc3f7', sub: '#ffee58', glue: '#9ccc65', bomb: '#90a4ae', ice: '#4fc3f7',
     farm: '#ffd54f', super: '#ef5350', tack: '#b0bec5', wizard: '#ce93d8'
   }[t.type];
   if (aura && !preview) {
@@ -2055,16 +2106,34 @@ function drawHUD() {
 
   if (placingTower) {
     const def = TOWER_DEFS[placingTower];
-    const valid = canPlace(mouse.x, mouse.y) && mouse.y < H - 130;
+    // Highlight water zones when placing boat/sub
+    if (def.waterOnly) {
+      const map = MAPS[selectedMap];
+      const mapTop = 50, mapH = H - 170;
+      if (map.waterZones) {
+        for (const z of map.waterZones) {
+          ctx.save();
+          ctx.globalAlpha = 0.22;
+          ctx.fillStyle = '#29b6f6';
+          ctx.beginPath();
+          ctx.ellipse(z.x * W, mapTop + z.y * mapH, (z.rx || 0.1) * W, (z.ry || 0.1) * mapH, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+    }
+    const valid = canPlace(mouse.x, mouse.y, placingTower) && mouse.y < H - 130;
     ctx.globalAlpha = 0.75;
     drawTower({ type: placingTower, x: mouse.x, y: mouse.y, range: def.range, angle: 0, aimAngle: 0, upgradeLevel: 0, shootKick: 0, shootFlash: 0, spriteSize: def.spriteSize }, true);
     ctx.globalAlpha = 1;
     ctx.fillStyle = valid ? '#4caf50' : '#f44336';
     ctx.font = 'bold 14px Segoe UI'; ctx.textAlign = 'center';
-    ctx.fillText('$' + def.cost + (valid ? '' : ' invalid'), mouse.x, mouse.y - 40);
+    let msg = '$' + def.cost;
+    if (!valid) msg += def.waterOnly && !isOnWater(mouse.x, mouse.y) ? ' — needs WATER' : ' invalid';
+    ctx.fillText(msg, mouse.x, mouse.y - 40);
     ctx.fillStyle = 'rgba(255,255,255,0.75)';
     ctx.font = '12px Segoe UI';
-    ctx.fillText('Right-click or Esc to cancel', mouse.x, mouse.y + 48);
+    ctx.fillText(def.waterOnly ? 'Boat/Sub: place on water only' : 'Right-click or Esc to cancel', mouse.x, mouse.y + 48);
   }
 }
 
@@ -2229,6 +2298,7 @@ const BTD_PORTRAITS = {
   sniper: BTD_BASE + 'tower-sniper-monkey.png',
   ninja: BTD_BASE + 'tower-ninja-monkey.png',
   water: BTD_BASE + 'tower-water-monkey.png',
+  sub: BTD_BASE + 'tower-sub-monkey.png',
   glue: BTD_BASE + 'tower-glue-gunner.png',
   bomb: BTD_BASE + 'tower-cannon-monkey.png',
   ice: BTD_BASE + 'tower-ice.png',
@@ -2424,7 +2494,7 @@ function renderBtdTowerGrid() {
           rp.style.top = sy + 'px';
           mouse.x = g.x; mouse.y = g.y;
           updateSidebarDock();
-          const ok = canPlace(g.x, g.y) && g.y < H - 40;
+          const ok = canPlace(g.x, g.y, type) && g.y < H - 40;
           rp.style.borderColor = ok ? 'rgba(76,175,80,.7)' : 'rgba(244,67,54,.7)';
           rp.style.background = ok ? 'rgba(76,175,80,.12)' : 'rgba(244,67,54,.12)';
         };
@@ -2437,7 +2507,7 @@ function renderBtdTowerGrid() {
           const g = toGame(ev.clientX - rect.left, ev.clientY - rect.top);
           mouse.x = g.x; mouse.y = g.y;
           updateSidebarDock();
-          if (placingTower === type && canPlace(g.x, g.y) && g.y > 55 && g.y < H - 20) {
+          if (placingTower === type && canPlace(g.x, g.y, type) && g.y > 55 && g.y < H - 20) {
             if (cash >= def.cost) {
               cash -= def.cost; totalSpent += def.cost;
               towers.push(createTower(type, g.x, g.y));
