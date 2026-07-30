@@ -72,14 +72,14 @@ const TOWER_SPRITE = {
   tack: 'towers/tack_shooter/idle.png'
 };
 // Shared 2-frame idle for all character towers
+// 2-frame idle only for character monkeys (subtle bob). Mechanical towers
+// (bomb, tack) use a single stable sprite so weapons don't "swap".
 const TOWER_IDLE2 = {
   dart: ['towers/dart_monkey/idle.png', 'towers/dart_monkey/idle_1.png'],
   sniper: ['towers/sniper_monkey/idle.png', 'towers/sniper_monkey/idle_1.png'],
-  bomb: ['towers/bomb_shooter/idle.png', 'towers/bomb_shooter/idle_1.png'],
   ice: ['towers/ice_monkey/idle.png', 'towers/ice_monkey/idle_1.png'],
   farm: ['towers/banana_farm/idle.png', 'towers/banana_farm/idle_1.png'],
-  super: ['towers/super_monkey/idle.png', 'towers/super_monkey/idle_1.png'],
-  tack: ['towers/tack_shooter/idle.png', 'towers/tack_shooter/idle_1.png']
+  super: ['towers/super_monkey/idle.png', 'towers/super_monkey/idle_1.png']
 };
 // Wizard multi-frame animation
 const WIZARD_FRAMES = [
