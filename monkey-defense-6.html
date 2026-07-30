@@ -201,15 +201,16 @@ canvas{display:block;margin:0 auto;cursor:default;background:#0a0a14;position:re
 
 /* ─── BTD6 UPGRADE PANEL (3 paths × 5 tiers) ─── */
 #btdUpgradePanel{
-  position:absolute;top:48px;bottom:10px;width:min(300px,28vw);z-index:28;
+  position:absolute;top:48px;bottom:10px;width:min(300px,28vw);z-index:40;
   display:none;flex-direction:column;
   background:linear-gradient(180deg,#c4a574 0%,#a88855 12%,#8b6f3f 50%,#7a6035 100%);
   border:3px solid #5a4320;border-radius:16px 0 0 16px;
   box-shadow:-8px 0 24px rgba(0,0,0,.45),inset 0 2px 0 rgba(255,255,255,.25);
-  padding:10px 10px 12px;pointer-events:auto;
+  padding:10px 10px 12px;pointer-events:auto !important;
   font-family:'Nunito',sans-serif;
 }
-#btdUpgradePanel:not(.hidden){display:flex}
+#btdUpgradePanel:not(.hidden){display:flex;pointer-events:auto !important}
+#btdUpgradePanel button,#btdUpgradePanel .btd-path-buy{pointer-events:auto !important;position:relative;z-index:2}
 #btdUpgradePanel.side-left{
   left:0;right:auto;border-radius:0 16px 16px 0;
   box-shadow:8px 0 24px rgba(0,0,0,.45),inset 0 2px 0 rgba(255,255,255,.25);
@@ -1331,6 +1332,8 @@ function applyPathChanges(tower, c) {
 }
 function applyUpgrade(tower, pathIdx) {
   const def = TOWER_DEFS[tower.type];
+  if (!def || !def.paths) return false;
+  if (!tower.paths) tower.paths = [0, 0, 0];
   if (!canUpgradePath(tower, pathIdx)) return false;
   const tier = tower.paths[pathIdx]; // next tier index 0..4
   const up = def.paths[pathIdx][tier];
@@ -1340,7 +1343,6 @@ function applyUpgrade(tower, pathIdx) {
   applyPathChanges(tower, up.changes);
   sfx('upgrade');
   spawnSpriteAnim('fx_magic_', 6, tower.x, tower.y, 50 + pathTotal(tower) * 8, 14);
-  if (typeof renderBtdUpgradePanel === 'function') renderBtdUpgradePanel();
   return true;
 }
 function getTarget(tower) {
@@ -2072,7 +2074,8 @@ function handleClick() {
     let found = null;
     for (const t of towers) if (dist(mx, my, t.x, t.y) < 28) { found = t; break; }
     selectedTower = found;
-    if (typeof renderBtdUpgradePanel === 'function') renderBtdUpgradePanel();
+    btdLastUpgSig = ''; // force panel rebuild on selection change
+    if (typeof renderBtdUpgradePanel === 'function') renderBtdUpgradePanel(true);
   }
 }
 
@@ -2588,26 +2591,50 @@ const MAPS_PER_PAGE = 6;
 
 function btdEl(id) { return document.getElementById(id); }
 
-function renderBtdUpgradePanel() {
+/** Signature for when upgrade panel needs a full rebuild (not every frame). */
+function btdUpgradeSignature() {
+  if (!selectedTower) return '';
+  const t = selectedTower;
+  return towers.indexOf(t) + '|' + pathCode(t) + '|' + cash + '|' + (t.targeting || '') + '|' + sidebarSide;
+}
+let btdLastUpgSig = '';
+
+function hideBtdUpgradePanel() {
+  const panel = btdEl('btdUpgradePanel');
+  if (!panel) return;
+  panel.classList.add('hidden');
+  panel.style.display = 'none';
+  btdLastUpgSig = '';
+}
+
+function renderBtdUpgradePanel(force) {
   const panel = btdEl('btdUpgradePanel');
   if (!panel) return;
   if (!selectedTower || (gameState !== State.GAMEPLAY && gameState !== State.PAUSE)) {
-    panel.classList.add('hidden');
-    panel.style.display = 'none';
+    hideBtdUpgradePanel();
     return;
   }
   const t = selectedTower;
   const def = TOWER_DEFS[t.type];
   if (!def || !def.paths) {
-    panel.classList.add('hidden');
+    hideBtdUpgradePanel();
     return;
   }
+  const sig = btdUpgradeSignature();
+  // Skip full rebuild if nothing relevant changed — prevents killing button mid-click
+  if (!force && sig === btdLastUpgSig && !panel.classList.contains('hidden')) {
+    // still refresh sell label / afford highlight lightly via cash already in sig
+    return;
+  }
+  btdLastUpgSig = sig;
+
   panel.classList.remove('hidden');
   panel.style.display = 'flex';
-  // dock opposite tower-sidebar
+  panel.style.pointerEvents = 'auto';
   panel.classList.toggle('side-right', sidebarSide === 'right');
   panel.classList.toggle('side-left', sidebarSide === 'left');
-  panel.style.setProperty('--side-w', (document.getElementById('btdSidebar')?.offsetWidth || 220) + 'px');
+  const sideW = (document.getElementById('btdSidebar') && document.getElementById('btdSidebar').offsetWidth) || 220;
+  panel.style.setProperty('--side-w', sideW + 'px');
 
   const imgEl = btdEl('btdUpgPortrait');
   if (imgEl) imgEl.src = BTD_PORTRAITS[t.type] || ('public/assets/towers/' + (TOWER_DIRS[t.type] || t.type) + '/idle.png');
@@ -2640,6 +2667,7 @@ function renderBtdUpgradePanel() {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'btd-path-buy';
+    btn.setAttribute('data-path', String(pi));
     const tier = t.paths[pi];
     if (tier >= 5) {
       btn.classList.add('owned-max');
@@ -2651,21 +2679,13 @@ function renderBtdUpgradePanel() {
       const afford = cash >= up.cost;
       if (allowed && afford) btn.classList.add('can-buy');
       if (!afford) btn.classList.add('cant');
-      btn.disabled = !allowed;
+      btn.disabled = !allowed || !afford;
       const status = !allowed ? 'LOCKED (crosspath)' : (afford ? 'BUY T' + (tier + 1) : 'Need cash');
       btn.innerHTML =
         '<span class="icon">' + (up.icon || '⬆️') + '</span>' +
         '<div><div class="nm">' + up.name + '</div>' +
         '<div class="ds">' + up.desc + ' · ' + status + '</div></div>' +
         '<span class="pr">$' + up.cost.toLocaleString() + '</span>';
-      if (allowed) {
-        btn.onclick = () => {
-          if (applyUpgrade(t, pi)) {
-            sfx('click');
-            renderBtdUpgradePanel();
-          } else sfx('click');
-        };
-      }
     }
     row.appendChild(tiers);
     row.appendChild(btn);
@@ -2729,26 +2749,34 @@ function initBtdUi() {
     };
   });
   btdEl('btdHeroBtn').onclick = () => sfx('click');
-  btdEl('btdUpgradesBtn').onclick = () => {
-    if (selectedTower) renderBtdUpgradePanel();
+  btdEl('btdUpgradesBtn').onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (selectedTower) renderBtdUpgradePanel(true);
     else {
       btdEl('btdSelName').textContent = 'TAP A PLACED TOWER';
       sfx('click');
     }
   };
-  btdEl('btdUpgClose').onclick = () => {
+  btdEl('btdUpgClose').onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     selectedTower = null;
-    renderBtdUpgradePanel();
+    hideBtdUpgradePanel();
     sfx('click');
   };
-  btdEl('btdUpgTarget').onclick = () => {
+  btdEl('btdUpgTarget').onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (!selectedTower) return;
     const modes = ['first', 'last', 'strong', 'close'];
     selectedTower.targeting = modes[(modes.indexOf(selectedTower.targeting) + 1) % 4];
-    renderBtdUpgradePanel();
+    renderBtdUpgradePanel(true);
     sfx('click');
   };
-  btdEl('btdUpgSell').onclick = () => {
+  btdEl('btdUpgSell').onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     if (!selectedTower) return;
     const val = Math.floor(selectedTower.totalCost * 0.7);
     cash += val;
@@ -2756,9 +2784,38 @@ function initBtdUi() {
     if (idx >= 0) towers.splice(idx, 1);
     spawnFloat(selectedTower.x, selectedTower.y, '+$' + val, '#4caf50');
     selectedTower = null;
-    renderBtdUpgradePanel();
+    hideBtdUpgradePanel();
     sfx('sell');
   };
+  // Event delegation for upgrade path buttons (survives partial rebuilds)
+  const pathsHost = btdEl('btdUpgPaths');
+  if (pathsHost && !pathsHost._btdBound) {
+    pathsHost._btdBound = true;
+    pathsHost.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const btn = e.target.closest('.btd-path-buy');
+      if (!btn || btn.disabled) return;
+      if (!selectedTower) return;
+      const pi = parseInt(btn.getAttribute('data-path'), 10);
+      if (isNaN(pi)) return;
+      if (applyUpgrade(selectedTower, pi)) {
+        btdLastUpgSig = ''; // force rebuild after successful buy
+        renderBtdUpgradePanel(true);
+        sfx('click');
+      } else {
+        sfx('click');
+      }
+    });
+  }
+  // Stop canvas from stealing mousedown that starts on the upgrade panel
+  const upPanel = btdEl('btdUpgradePanel');
+  if (upPanel && !upPanel._btdBound) {
+    upPanel._btdBound = true;
+    ['mousedown', 'mouseup', 'click', 'touchstart', 'touchend'].forEach(ev => {
+      upPanel.addEventListener(ev, (e) => e.stopPropagation());
+    });
+  }
   btdEl('btdFfBtn').onclick = () => {
     gameSpeed = gameSpeed >= 3 ? 1 : gameSpeed + 1;
     btdEl('btdFfBtn').classList.toggle('active', gameSpeed > 1);
@@ -2953,13 +3010,11 @@ function syncBtdUi() {
     sideEl.classList.add('hidden');
     sideEl.style.display = 'none';
   }
-  // upgrade panel visibility
-  if (typeof renderBtdUpgradePanel === 'function') {
-    if (showSide && selectedTower) renderBtdUpgradePanel();
-    else {
-      const up = btdEl('btdUpgradePanel');
-      if (up) { up.classList.add('hidden'); up.style.display = 'none'; }
-    }
+  // Upgrade panel: only rebuild when signature changes (cash/paths/selection) — NOT every frame
+  if (showSide && selectedTower) {
+    renderBtdUpgradePanel(false);
+  } else {
+    hideBtdUpgradePanel();
   }
 
   // Rebuild map cards only when entering map select
@@ -2972,7 +3027,6 @@ function syncBtdUi() {
   if (showSide) {
     if (btdLastCash !== cash || btdLastPlace !== placingTower || btdLastState !== gameState) {
       renderBtdTowerGrid();
-      if (selectedTower) renderBtdUpgradePanel();
       btdLastCash = cash;
       btdLastPlace = placingTower;
     }
