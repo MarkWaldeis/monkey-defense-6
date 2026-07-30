@@ -71,6 +71,16 @@ const TOWER_SPRITE = {
   super: 'towers/super_monkey/idle.png',
   tack: 'towers/tack_shooter/idle.png'
 };
+// Shared 2-frame idle for all character towers
+const TOWER_IDLE2 = {
+  dart: ['towers/dart_monkey/idle.png', 'towers/dart_monkey/idle_1.png'],
+  sniper: ['towers/sniper_monkey/idle.png', 'towers/sniper_monkey/idle_1.png'],
+  bomb: ['towers/bomb_shooter/idle.png', 'towers/bomb_shooter/idle_1.png'],
+  ice: ['towers/ice_monkey/idle.png', 'towers/ice_monkey/idle_1.png'],
+  farm: ['towers/banana_farm/idle.png', 'towers/banana_farm/idle_1.png'],
+  super: ['towers/super_monkey/idle.png', 'towers/super_monkey/idle_1.png'],
+  tack: ['towers/tack_shooter/idle.png', 'towers/tack_shooter/idle_1.png']
+};
 // Wizard multi-frame animation
 const WIZARD_FRAMES = [
   'towers/wizard_monkey/idle_0.png',
@@ -129,6 +139,9 @@ function buildAssetList() {
   const list = [];
   const add = (key, src) => list.push({ key, src: ASSET_BASE + src });
   Object.entries(TOWER_SPRITE).forEach(([k, v]) => add('tower_' + k, v));
+  Object.entries(TOWER_IDLE2).forEach(([k, arr]) => {
+    arr.forEach((v, i) => add('tower_' + k + '_f' + i, v));
+  });
   WIZARD_FRAMES.forEach((v, i) => add('wizard_idle_' + i, v));
   WIZARD_ATTACK.forEach((v, i) => add('wizard_atk_' + i, v));
   Object.entries(BLOON_SPRITE).forEach(([k, v]) => add('bloon_' + k, v));
@@ -1315,7 +1328,7 @@ function drawTower(t, preview) {
   ctx.fillStyle = 'rgba(0,0,0,0.25)';
   ctx.beginPath(); ctx.ellipse(t.x, t.y + size*0.35, size*0.28, size*0.12, 0, 0, Math.PI*2); ctx.fill();
 
-  // Wizard: animated frames + soft (no full sprite rotation — cleaner look)
+  // Character towers: face-camera art + light idle animation (wizard style)
   if (t.type === 'wizard' && !preview) {
     const attacking = t.cooldown > 0 && t.cooldown > t.fireRate - 0.25;
     let key;
@@ -1326,8 +1339,7 @@ function drawTower(t, preview) {
       const fi = Math.floor(animT * 6 + t.bob) % 4;
       key = 'wizard_idle_' + fi;
     }
-    // soft aura
-    const pulse = 0.35 + 0.15 * Math.sin(animT * 4 + t.bob);
+    const pulse = 0.28 + 0.12 * Math.sin(animT * 4 + t.bob);
     ctx.save();
     ctx.globalAlpha = pulse;
     ctx.fillStyle = '#ce93d8';
@@ -1336,7 +1348,6 @@ function drawTower(t, preview) {
     if (!drawImg(key, t.x, t.y + bob, size + 10, size + 10, 0)) {
       drawImg('tower_wizard', t.x, t.y + bob, size, size, 0);
     }
-    // orbiting sparkles
     for (let i = 0; i < 3; i++) {
       const a = animT * 3 + i * 2.1;
       const rr = size * 0.42;
@@ -1348,12 +1359,27 @@ function drawTower(t, preview) {
       ctx.globalAlpha = 1;
     }
   } else {
-    // other towers: rotate toward target
-    const key = 'tower_' + t.type;
-    const rot = (t.type === 'farm' || t.type === 'ice' || t.type === 'tack') ? 0 : (t.angle + Math.PI/2);
-    if (!drawImg(key, t.x, t.y + bob, size, size, rot)) {
-      ctx.fillStyle = def.color;
-      ctx.beginPath(); ctx.arc(t.x, t.y + bob, 16, 0, Math.PI*2); ctx.fill();
+    // 2-frame idle bob (same art family as wizard)
+    const fi = Math.floor(animT * 4 + (t.bob || 0)) % 2;
+    const animKey = 'tower_' + t.type + '_f' + fi;
+    const key = img(animKey) ? animKey : ('tower_' + t.type);
+    // soft type-colored aura
+    const aura = {
+      dart: '#81c784', sniper: '#66bb6a', bomb: '#90a4ae', ice: '#4fc3f7',
+      farm: '#ffd54f', super: '#ef5350', tack: '#b0bec5'
+    }[t.type];
+    if (aura && !preview) {
+      ctx.save();
+      ctx.globalAlpha = 0.18 + 0.08 * Math.sin(animT * 3 + t.bob);
+      ctx.fillStyle = aura;
+      ctx.beginPath(); ctx.arc(t.x, t.y + bob, size * 0.45, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
+    if (!drawImg(key, t.x, t.y + bob, size + 8, size + 8, 0)) {
+      if (!drawImg('tower_' + t.type, t.x, t.y + bob, size, size, 0)) {
+        ctx.fillStyle = def.color;
+        ctx.beginPath(); ctx.arc(t.x, t.y + bob, 16, 0, Math.PI*2); ctx.fill();
+      }
     }
   }
   if (t.upgradeLevel > 0) {
