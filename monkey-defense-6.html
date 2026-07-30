@@ -7,6 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Monkey Defense 6</title>
+<link rel="icon" href="favicon.ico" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
@@ -25,7 +26,7 @@ canvas{
 }
 #uiRoot{position:fixed;inset:0;pointer-events:none;z-index:20;touch-action:manipulation}
 #uiRoot .btd-interactive{pointer-events:auto}
-#btdMapSelect:not(.hidden),#btdSidebar:not(.hidden),#btdUpgradePanel:not(.hidden){pointer-events:auto}
+#btdMapSelect:not(.hidden),#btdDiffSelect:not(.hidden),#btdSidebar:not(.hidden),#btdUpgradePanel:not(.hidden){pointer-events:auto}
 .hidden{display:none!important;pointer-events:none!important}
 #btdMapSelect{z-index:30}
 #btdSidebar{z-index:25}
@@ -127,6 +128,36 @@ canvas{
   cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.3);
 }
 .btd-hero img{width:40px;height:40px;border-radius:50%;border:2px solid #4ecdc4;background:#2d5a27;object-fit:contain}
+
+/* ─── DIFFICULTY SELECT (after map) ─── */
+#btdDiffSelect{
+  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at center,rgba(20,40,30,.55),rgba(5,8,12,.88)),
+    url('public/assets/ui/btd/home-screen-bg.png') center/cover no-repeat;
+  z-index:35;pointer-events:auto;
+}
+.btd-diff-panel{position:relative;z-index:1;text-align:center;width:min(980px,94vw);padding:20px}
+.btd-diff-title{
+  font-family:'Luckiest Guy',cursive;font-size:clamp(28px,4vw,42px);color:#ffd700;
+  text-shadow:0 3px 0 #5a3d0e,0 6px 16px rgba(0,0,0,.5);margin-bottom:6px;letter-spacing:1px;
+}
+.btd-diff-sub{color:rgba(255,255,255,.8);font-weight:800;font-size:14px;margin-bottom:28px;text-shadow:0 2px 4px #000}
+.btd-diff-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+@media (max-width:800px){.btd-diff-cards{grid-template-columns:1fr 1fr}}
+.btd-diff-card{
+  background:linear-gradient(180deg,#e8dcc8,#c4b08a);border-radius:18px;padding:18px 12px 16px;
+  border:3px solid #a89068;cursor:pointer;box-shadow:0 8px 20px rgba(0,0,0,.4);
+  transition:transform .15s,box-shadow .15s;color:#1a1a1a;
+}
+.btd-diff-card:hover{transform:scale(1.05);box-shadow:0 0 0 3px #f5c542,0 10px 24px rgba(0,0,0,.45)}
+.btd-diff-card:active{transform:scale(.96)}
+.btd-diff-card .ico{font-size:36px;margin-bottom:8px}
+.btd-diff-card .nm{font-family:'Luckiest Guy',cursive;font-size:22px;margin-bottom:8px}
+.btd-diff-card .meta{font-weight:800;font-size:13px;line-height:1.45;color:#333}
+.btd-diff-card.easy .nm{color:#2e7d32}
+.btd-diff-card.medium .nm{color:#f9a825}
+.btd-diff-card.hard .nm{color:#c62828}
+.btd-diff-card.expert .nm{color:#6a1b9a}
 
 /* ─── BTD TOWER SIDEBAR ─── */
 #btdSidebar{
@@ -405,10 +436,20 @@ canvas{
       <button class="btd-diff advanced" data-diff="2"><span class="medal">🌋</span>ADVANCED</button>
       <button class="btd-diff expert" data-diff="3"><span class="medal">💀</span>EXPERT</button>
     </div>
-    <button class="btd-hero" id="btdHeroBtn" type="button">
+    <button class="btd-hero" id="btdHeroBtn" type="button" title="Heroes coming soon">
       <img id="btdHeroImg" alt="hero" src="public/assets/ui/btd/tower-dart-monkey.png">
-      <span>CHANGE HERO</span>
+      <span>HERO SOON</span>
     </button>
+  </div>
+
+  <!-- Difficulty select after map pick (game mode, independent of map tier tab) -->
+  <div id="btdDiffSelect" class="hidden">
+    <button class="btd-back" id="btdDiffBack" title="Back to maps">←</button>
+    <div class="btd-diff-panel">
+      <div class="btd-diff-title" id="btdDiffMapName">SELECT DIFFICULTY</div>
+      <div class="btd-diff-sub">Choose game mode — maps and difficulty are separate</div>
+      <div class="btd-diff-cards" id="btdDiffCards"></div>
+    </div>
   </div>
 
   <!-- BTD Tower Sidebar -->
@@ -473,7 +514,13 @@ let loadProgress = 0, loadTotal = 1, loadError = null;
 let mouse = { x: 0, y: 0, down: false, clicked: false };
 let dt = 0, lastTime = 0, gameSpeed = 1, animT = 0;
 let lives = 150, cash = 650, round = 0, maxRounds = 40;
-let selectedMap = 0, selectedDiff = 1;
+let selectedMap = 0;
+/** Game mode: Easy / Medium / Hard / Expert (DIFFS index) — independent of map pack tab */
+let selectedDiff = 0;
+/** Map pack tab: 0=Beginner … 3=Expert (filters MAPS by difficulty field) */
+let selectedMapTier = 0;
+let bombBlitzCD = 0;
+let mapStartPending = false; // debounce double map clicks
 let placingTower = null, selectedTower = null;
 /** 'right' | 'left' — tower pick menu docks opposite the cursor */
 let sidebarSide = 'right';
@@ -647,10 +694,10 @@ function drawImgTL(key, x, y, w, h) {
 // ─── DIFFICULTY / DEFS (gameplay) ────────────────────────────
 // Game modes: Easy→R40, Medium→R60, Hard→R100, Expert→R100 (tougher)
 const DIFFS = [
-  { name: 'Easy', lives: 200, cash: 650, speedMul: 0.80, maxRounds: 40, cashMul: 1.0, color: '#4caf50', icon: '🟢', label: 'R1–40' },
-  { name: 'Medium', lives: 150, cash: 550, speedMul: 1.0, maxRounds: 60, cashMul: 0.9, color: '#ffc107', icon: '🟡', label: 'R1–60' },
-  { name: 'Hard', lives: 100, cash: 500, speedMul: 1.12, maxRounds: 100, cashMul: 0.8, color: '#f44336', icon: '🔴', label: 'R1–100' },
-  { name: 'Expert', lives: 80, cash: 450, speedMul: 1.25, maxRounds: 100, cashMul: 0.7, color: '#9c27b0', icon: '💀', label: 'R1–100+' }
+  { name: 'Easy', lives: 200, cash: 700, speedMul: 0.80, maxRounds: 40, cashMul: 1.0, hpMul: 1.0, sellMul: 0.80, color: '#4caf50', icon: '🟢', label: 'R1–40' },
+  { name: 'Medium', lives: 150, cash: 650, speedMul: 1.0, maxRounds: 60, cashMul: 0.9, hpMul: 1.0, sellMul: 0.70, color: '#ffc107', icon: '🟡', label: 'R1–60' },
+  { name: 'Hard', lives: 100, cash: 500, speedMul: 1.12, maxRounds: 100, cashMul: 0.8, hpMul: 1.15, sellMul: 0.70, color: '#f44336', icon: '🔴', label: 'R1–100' },
+  { name: 'Expert', lives: 50, cash: 400, speedMul: 1.20, maxRounds: 100, cashMul: 0.65, hpMul: 1.35, sellMul: 0.60, color: '#9c27b0', icon: '💀', label: 'R1–100+' }
 ];
 
 // Bloon layers inspired by BTD6. MOAB-class HP is high so bosses feel dangerous.
@@ -666,13 +713,13 @@ const BLOON_TYPES = {
   lead:    { color: '#78909c', hp: 1,  speed: 0.95, children: ['black','black'], rbe: 23, cash: 1, radius: 16, immune: ['sharp'] },
   zebra:   { color: '#424242', hp: 1,  speed: 1.7,  children: ['black','white'], rbe: 23, cash: 1, radius: 16 },
   rainbow: { color: '#ff00ff', hp: 1,  speed: 2.0,  children: ['zebra','zebra'], rbe: 47, cash: 2, radius: 17 },
-  ceramic: { color: '#a1887f', hp: 18, speed: 2.2,  children: ['rainbow','rainbow'], rbe: 104, cash: 5, radius: 18 },
+  ceramic: { color: '#a1887f', hp: 18, speed: 2.2,  children: ['rainbow','rainbow'], rbe: 104, cash: 12, radius: 18 },
   // MOAB class — hard shells, few cash, spawn layers (BTD6-style hierarchy)
   moab: { color: '#1565c0', hp: 1800, speed: 0.42, children: ['ceramic','ceramic','ceramic','ceramic'], rbe: 616, cash: 25, radius: 38, moab: true },
   bfb:  { color: '#c62828', hp: 6500, speed: 0.26, children: ['moab','moab','moab','moab'], rbe: 3164, cash: 50, radius: 50, moab: true },
   zomg: { color: '#2e7d32', hp: 22000, speed: 0.15, children: ['bfb','bfb','bfb','bfb'], rbe: 16656, cash: 100, radius: 64, moab: true },
-  // DDT: fast camo + lead (sharp immune), moderate HP
-  ddt:  { color: '#4a148c', hp: 2400, speed: 0.95, children: ['ceramic','ceramic','ceramic','ceramic'], rbe: 816, cash: 40, radius: 36, moab: true, immune: ['sharp'], alwaysCamo: true },
+  // DDT: camo + lead (sharp immune); slightly slower than pink for fair reaction
+  ddt:  { color: '#4a148c', hp: 2200, speed: 0.80, children: ['ceramic','ceramic','ceramic','ceramic'], rbe: 816, cash: 40, radius: 36, moab: true, immune: ['sharp'], alwaysCamo: true },
   // BAD: endgame boss
   bad:  { color: '#6a1b9a', hp: 65000, speed: 0.10, children: ['zomg','zomg','ddt','ddt','ddt','moab','moab','moab'], rbe: 55760, cash: 250, radius: 78, moab: true }
 };
@@ -717,7 +764,7 @@ const TOWER_DEFS = {
       [ U('Night Vision Goggles', 200, 'Faster aim', { fireRate: -0.15 }, '🥽'),
         U('Shrapnel Shot', 450, '+pierce', { pierce: 2 }, '✨'),
         U('Bouncing Bullet', 1100, 'More pierce', { pierce: 3, fireRate: -0.1 }, '🔁'),
-        U('Supply Drop', 7000, 'Cash crate each round', { income: 200 }, '📦'),
+        U('Supply Drop', 7000, 'Cash crate each round', { income: 100 }, '📦'),
         U('Elite Defender', 30000, 'Blazing fire rate', { fireRate: -0.5, damage: 2 }, '🛡️') ],
       [ U('Fast Firing', 250, 'Attack speed', { fireRate: -0.2 }, '⚡'),
         U('Even Faster Firing', 400, 'More speed', { fireRate: -0.2 }, '💨'),
@@ -765,9 +812,9 @@ const TOWER_DEFS = {
         U('Pirate Lord', 28000, 'Boss shredder', { moabMul: 10, damage: 3, aoeRadius: 40 }, '👑') ],
       [ U('Long Range', 200, '+range', { range: 30 }, '🔭'),
         U('Crow\'s Nest', 350, 'See camo', { canSeeCamo: true, range: 15 }, '🐦'),
-        U('Merchantman', 1500, 'Income / round', { income: 150 }, '💰'),
-        U('Favored Trades', 4500, 'Big income', { income: 300 }, '📈'),
-        U('Trade Empire', 22000, 'Massive income', { income: 700 }, '🏦') ]
+        U('Merchantman', 1500, 'Income / round', { income: 100 }, '💰'),
+        U('Favored Trades', 4500, 'Big income', { income: 200 }, '📈'),
+        U('Trade Empire', 22000, 'Massive income', { income: 400 }, '🏦') ]
     ]
   },
   sub: {
@@ -850,25 +897,25 @@ const TOWER_DEFS = {
       [ U('Faster Reload', 250, 'Attack speed', { fireRate: -0.15 }, '⚡'),
         U('Missile Launcher', 400, 'Faster missiles', { fireRate: -0.15, range: 20 }, '🚀'),
         U('MOAB Mauler', 1200, '8x vs MOAB', { moabMul: 8 }, '🎯'),
-        U('MOAB Assassin', 5000, '12x vs MOAB', { moabMul: 12, damage: 2 }, '☠️'),
-        U('MOAB Eliminator', 30000, 'Delete bosses', { moabMul: 20, damage: 4, aoeRadius: 30 }, '☢️') ],
+        U('MOAB Assassin', 5000, '10x vs MOAB', { moabMul: 10, damage: 2 }, '☠️'),
+        U('MOAB Eliminator', 30000, 'Delete bosses', { moabMul: 15, damage: 4, aoeRadius: 30 }, '☢️') ],
       [ U('Extra Range', 200, '+range', { range: 25 }, '🔭'),
         U('Frag Bombs', 350, 'Shrapnel pierce', { pierce: 3 }, '✨'),
         U('Cluster Bombs', 1300, 'Cluster AoE', { aoeRadius: 20, damage: 1 }, '🎆'),
         U('Recursive Cluster', 4800, 'Double cluster', { aoeRadius: 28, damage: 2, pierce: 2 }, '🔁'),
-        U('Bomb Blitz', 26000, 'Screen wipe on leak threat', { aoeRadius: 60, damage: 4, fireRate: -0.15 }, '🌪️') ]
+        U('Bomb Blitz', 26000, 'Screen wipe on leak threat', { aoeRadius: 60, damage: 4, fireRate: -0.15, bombBlitz: true }, '🌪️') ]
     ]
   },
   ice: {
-    name: 'Ice Monkey', icon: '❄️', cost: 300, range: 75, fireRate: 2.0, damage: 0, pierce: 99,
-    projSpeed: 0, projType: 'freeze', special: 'freeze', freezeTime: 1.2, canPopLead: false, canPopFrozen: true, canPopPurple: true,
+    name: 'Ice Monkey', icon: '❄️', cost: 375, range: 75, fireRate: 2.4, damage: 0, pierce: 25,
+    projSpeed: 0, projType: 'freeze', special: 'freeze', freezeTime: 0.9, canPopLead: false, canPopFrozen: true, canPopPurple: true,
     color: '#4fc3f7', spriteSize: 56, pathNames: ['Perma', 'Deep Freeze', 'Icicles'],
     paths: [
       [ U('Permafrost', 200, 'Slow after thaw', { permafrost: true }, '🧊'),
         U('Metal Freeze', 350, 'Freeze lead', { canPopLead: true }, '⚙️'),
-        U('Ice Shards', 1200, 'Damage on freeze', { damage: 1 }, '💎'),
-        U('Snowstorm', 4500, 'Big freeze', { range: 40, freezeTime: 1 }, '🌨️'),
-        U('Absolute Zero', 24000, 'Map freeze pulse', { arctic: true, freezeTime: 2, range: 60, damage: 2 }, '❄️') ],
+        U('Ice Shards', 1200, 'Damage on freeze', { damage: 1, pierce: 20 }, '💎'),
+        U('Snowstorm', 4500, 'Big freeze', { range: 40, freezeTime: 1, pierce: 40 }, '🌨️'),
+        U('Absolute Zero', 24000, 'Map freeze pulse', { arctic: true, freezeTime: 2, range: 60, damage: 2, pierce: 99 }, '❄️') ],
       [ U('Enhanced Freeze', 180, 'Longer freeze', { freezeTime: 0.8 }, '⏱️'),
         U('Deep Freeze', 320, 'Even longer', { freezeTime: 0.8 }, '🧊'),
         U('Arctic Wind', 1400, 'Permanent slow aura', { arctic: true, range: 30 }, '🌬️'),
@@ -894,7 +941,7 @@ const TOWER_DEFS = {
       [ U('Intense Magic', 250, '+pierce', { pierce: 2 }, '✨'),
         U('Monkey Sense', 350, 'See camo', { canSeeCamo: true }, '👁️'),
         U('Shimmer', 1200, 'Decamo + range', { range: 30, canSeeCamo: true }, '🌟'),
-        U('Necromancer', 5000, 'Undead army aid', { income: 80, damage: 1 }, '💀'),
+        U('Necromancer', 5000, 'Undead army aid', { income: 40, damage: 1 }, '💀'),
         U('Prince of Darkness', 28000, 'Dark army', { damage: 4, pierce: 4, fireRate: -0.15 }, '🦇') ],
       [ U('Guided Magic', 200, 'Seeking bolts', { seeking: true }, '🎯'),
         U('Arcane Blast', 400, '+damage', { damage: 1 }, '💜'),
@@ -905,46 +952,46 @@ const TOWER_DEFS = {
   },
   farm: {
     name: 'Banana Farm', icon: '🍌', cost: 1000, range: 0, fireRate: 0, damage: 0, pierce: 0,
-    projSpeed: 0, projType: 'none', special: 'income', income: 60, canPopLead: false, canPopFrozen: false, canPopPurple: false,
+    projSpeed: 0, projType: 'none', special: 'income', income: 40, canPopLead: false, canPopFrozen: false, canPopPurple: false,
     color: '#fbc02d', spriteSize: 56, pathNames: ['Banana', 'Value', 'Bank'],
     paths: [
-      [ U('Increased Production', 350, '+$40 / round', { income: 40 }, '🍌'),
-        U('Greater Production', 500, '+$50 / round', { income: 50 }, '🌴'),
-        U('Banana Plantation', 1800, '+$120 / round', { income: 120 }, '🏞️'),
-        U('Banana Research', 7000, '+$250 / round', { income: 250 }, '🔬'),
-        U('Banana Central', 35000, '+$800 / round', { income: 800 }, '🏢') ],
-      [ U('Long Life Bananas', 300, '+$30 / round', { income: 30 }, '⏳'),
-        U('Valuable Bananas', 450, '+$50 / round', { income: 50 }, '💎'),
-        U('Monkey Bank', 2200, 'Bank interest', { income: 180 }, '🏦'),
-        U('IMF Loan', 6500, 'Big payouts', { income: 350 }, '💳'),
-        U('Monkey-Nomics', 32000, 'Economy broken', { income: 900 }, '📈') ],
-      [ U('EZ Collect', 250, '+$25 / round', { income: 25 }, '✋'),
-        U('Banana Salvage', 400, '+$40 / round', { income: 40 }, '♻️'),
-        U('Marketplace', 1600, '+$100 / round', { income: 100 }, '🛒'),
-        U('BRF', 5500, '+$220 / round', { income: 220 }, '🏭'),
-        U('Banana Research Facility', 30000, '+$700 / round', { income: 700 }, '🏗️') ]
+      [ U('Increased Production', 350, '+$30 / round', { income: 30 }, '🍌'),
+        U('Greater Production', 500, '+$40 / round', { income: 40 }, '🌴'),
+        U('Banana Plantation', 1800, '+$90 / round', { income: 90 }, '🏞️'),
+        U('Banana Research', 7000, '+$180 / round', { income: 180 }, '🔬'),
+        U('Banana Central', 35000, '+$450 / round', { income: 450 }, '🏢') ],
+      [ U('Long Life Bananas', 300, '+$25 / round', { income: 25 }, '⏳'),
+        U('Valuable Bananas', 450, '+$40 / round', { income: 40 }, '💎'),
+        U('Monkey Bank', 2200, 'Bank interest', { income: 140 }, '🏦'),
+        U('IMF Loan', 6500, 'Big payouts', { income: 250 }, '💳'),
+        U('Monkey-Nomics', 32000, 'Huge eco', { income: 500 }, '📈') ],
+      [ U('EZ Collect', 250, '+$20 / round', { income: 20 }, '✋'),
+        U('Banana Salvage', 400, '+$30 / round', { income: 30 }, '♻️'),
+        U('Marketplace', 1600, '+$80 / round', { income: 80 }, '🛒'),
+        U('BRF', 5500, '+$160 / round', { income: 160 }, '🏭'),
+        U('Banana Research Facility', 30000, '+$400 / round', { income: 400 }, '🏗️') ]
     ]
   },
   super: {
-    name: 'Super Monkey', icon: '🦸', cost: 2800, range: 160, fireRate: 0.12, damage: 1, pierce: 1,
-    projSpeed: 580, projType: 'laser', special: null, canPopLead: false, canPopFrozen: false, canPopPurple: true,
+    name: 'Super Monkey', icon: '🦸', cost: 3200, range: 160, fireRate: 0.15, damage: 1, pierce: 1,
+    projSpeed: 580, projType: 'laser', special: null, canPopLead: false, canPopFrozen: false, canPopPurple: false,
     color: '#e53935', spriteSize: 58, pathNames: ['Laser', 'Plasma', 'Dark'],
     paths: [
       [ U('Laser Blasts', 2000, 'Pop frozen', { canPopFrozen: true, damage: 1 }, '🔴'),
-        U('Plasma Blasts', 3500, '+pierce plasma', { pierce: 2, projType: 'plasma', fireRate: -0.02 }, '🟢'),
-        U('Sun Avatar', 12000, '3 sun beams', { sunAvatar: true, damage: 1, pierce: 1 }, '☀️'),
-        U('Sun Temple', 50000, 'Temple power', { damage: 3, pierce: 3, multiShot: 3, range: 40 }, '🛕'),
-        U('True Sun God', 120000, 'Godlike beams', { damage: 8, pierce: 6, multiShot: 5, fireRate: -0.03 }, '👑') ],
+        U('Plasma Blasts', 3500, '+pierce plasma + purple', { pierce: 2, projType: 'plasma', fireRate: -0.02, canPopPurple: true }, '🟢'),
+        U('Sun Avatar', 12000, '3 sun beams', { sunAvatar: true, damage: 1, pierce: 1, canPopPurple: true }, '☀️'),
+        U('Sun Temple', 50000, 'Temple power', { damage: 3, pierce: 3, multiShot: 3, range: 40, canPopPurple: true }, '🛕'),
+        U('True Sun God', 120000, 'Godlike beams', { damage: 8, pierce: 6, multiShot: 5, fireRate: -0.03, canPopPurple: true }, '👑') ],
       [ U('Super Range', 1000, '+range', { range: 40 }, '🔭'),
         U('Epic Range', 1500, 'More range', { range: 40 }, '📡'),
         U('Robo Monkey', 9000, 'Twin arms', { doubleShot: true, fireRate: -0.02 }, '🤖'),
-        U('Tech Terror', 35000, 'Tech plasma', { pierce: 4, damage: 2, aoeRadius: 25 }, '💀'),
-        U('The Anti-Bloon', 90000, 'Delete bloons', { damage: 10, pierce: 8, moabMul: 5 }, '☠️') ],
+        U('Tech Terror', 35000, 'Tech plasma', { pierce: 4, damage: 2, aoeRadius: 25, canPopPurple: true }, '💀'),
+        U('The Anti-Bloon', 90000, 'Delete bloons', { damage: 10, pierce: 8, moabMul: 5, canPopPurple: true }, '☠️') ],
       [ U('Knockback', 1200, 'Slow on hit', { glueSlow: 0.1, glueTime: 0.8 }, '↩️'),
         U('Ultravision', 1600, 'See camo', { canSeeCamo: true, range: 20 }, '👁️'),
-        U('Dark Knight', 8000, 'Dark power', { damage: 2, pierce: 2, canPopLead: true }, '🖤'),
+        U('Dark Knight', 8000, 'Dark power', { damage: 2, pierce: 2, canPopLead: true, canPopPurple: true }, '🖤'),
         U('Dark Champion', 30000, 'Champion DPS', { damage: 3, pierce: 3, fireRate: -0.03 }, '⚔️'),
-        U('Legend of the Night', 100000, 'Night legend', { damage: 6, pierce: 5, canSeeCamo: true, canPopLead: true, fireRate: -0.04 }, '🌙') ]
+        U('Legend of the Night', 100000, 'Night legend', { damage: 6, pierce: 5, canSeeCamo: true, canPopLead: true, fireRate: -0.04, canPopPurple: true }, '🌙') ]
     ]
   },
   tack: {
@@ -992,7 +1039,8 @@ const MAPS = [
       {type:'tree',x:0.08,y:0.12},{type:'tree',x:0.92,y:0.12},{type:'tree',x:0.08,y:0.88},
       {type:'tree',x:0.92,y:0.88},{type:'bush',x:0.45,y:0.12},{type:'bush',x:0.55,y:0.88},
       {type:'rock',x:0.35,y:0.40},{type:'rock',x:0.68,y:0.42},{type:'tree_star',x:0.88,y:0.55},
-      {type:'lake',x:0.12,y:0.18}
+      {type:'lake',x:0.12,y:0.18},{type:'bush',x:0.70,y:0.12},{type:'tree',x:0.50,y:0.90},
+      {type:'rock',x:0.18,y:0.62},{type:'bush',x:0.95,y:0.40}
     ]
   },
   // 2) In the Loop — desert road around a pond (easy, water for boat/sub)
@@ -1048,14 +1096,15 @@ const MAPS = [
     waterZones: [{x:0.12,y:0.72,rx:0.09,ry:0.08}],
     decorations: [
       {type:'candy',x:0.15,y:0.12},{type:'candy',x:0.40,y:0.12},{type:'candy',x:0.85,y:0.15},
-      {type:'candy',x:0.10,y:0.88},{type:'candy',x:0.90,y:0.88},{type:'bush',x:0.55,y:0.48},
-      {type:'rock',x:0.35,y:0.40},{type:'rock',x:0.65,y:0.58},{type:'tree',x:0.92,y:0.28},
-      {type:'lake',x:0.12,y:0.72}
+      {type:'candy',x:0.10,y:0.88},{type:'candy',x:0.90,y:0.88},{type:'lollipop',x:0.55,y:0.48},
+      {type:'lollipop',x:0.32,y:0.38},{type:'lollipop',x:0.72,y:0.28},{type:'candy',x:0.28,y:0.78},
+      {type:'rock',x:0.65,y:0.58},{type:'tree',x:0.92,y:0.28},{type:'lake',x:0.12,y:0.72},
+      {type:'candy',x:0.48,y:0.68},{type:'bush',x:0.88,y:0.48}
     ]
   },
   // 5) Alpine Lake — gentle snow path around frozen water (still beginner)
   {
-    name: 'Alpine Lake', difficulty: 1, terrain: 'snow', pathStyle: 'stone',
+    name: 'Alpine Lake', difficulty: 1, terrain: 'snow', pathStyle: 'snow',
     path: [
       {x:0.00,y:0.30},{x:0.20,y:0.28},{x:0.35,y:0.40},{x:0.30,y:0.58},
       {x:0.18,y:0.70},{x:0.28,y:0.85},{x:0.48,y:0.82},{x:0.62,y:0.70},
@@ -1066,7 +1115,8 @@ const MAPS = [
     decorations: [
       {type:'tree',x:0.08,y:0.12},{type:'tree',x:0.18,y:0.15},{type:'tree',x:0.88,y:0.12},
       {type:'tree',x:0.08,y:0.88},{type:'tree',x:0.90,y:0.85},{type:'rock',x:0.35,y:0.25},
-      {type:'rock',x:0.70,y:0.75},{type:'lake',x:0.50,y:0.48}
+      {type:'rock',x:0.70,y:0.75},{type:'lake',x:0.50,y:0.48},
+      {type:'bush',x:0.12,y:0.48},{type:'bush',x:0.88,y:0.62},{type:'rock',x:0.42,y:0.18}
     ]
   },
   // 6) Spa Pits — simple dual-bend beginner map with pools
@@ -1091,7 +1141,7 @@ const MAPS = [
   // ─── INTERMEDIATE (MEDIUM tab) — harder, less open space ───
   // 7) Cracked Quarry — long tight stone maze (Intermediate)
   {
-    name: 'Cracked Quarry', difficulty: 2, terrain: 'dark', pathStyle: 'stone',
+    name: 'Cracked Quarry', difficulty: 2, terrain: 'dark', pathStyle: 'dark',
     path: [
       {x:0.00,y:0.22},{x:0.22,y:0.20},{x:0.28,y:0.38},{x:0.18,y:0.52},
       {x:0.28,y:0.68},{x:0.42,y:0.58},{x:0.48,y:0.38},{x:0.38,y:0.22},
@@ -1111,7 +1161,7 @@ const MAPS = [
   },
   // 8) Twin Lanes — dual paths merge (multi-path Intermediate)
   {
-    name: 'Twin Lanes', difficulty: 2, terrain: 'lava', pathStyle: 'road', multiPath: true,
+    name: 'Twin Lanes', difficulty: 2, terrain: 'lava', pathStyle: 'lava', multiPath: true,
     path: [
       {x:0.00,y:0.22},{x:0.20,y:0.20},{x:0.35,y:0.32},{x:0.48,y:0.28},
       {x:0.58,y:0.42},{x:0.70,y:0.48},{x:0.82,y:0.42},{x:0.92,y:0.50},{x:0.98,y:0.55}
@@ -1120,19 +1170,22 @@ const MAPS = [
       {x:0.00,y:0.78},{x:0.20,y:0.80},{x:0.35,y:0.68},{x:0.48,y:0.72},
       {x:0.58,y:0.58},{x:0.70,y:0.52},{x:0.82,y:0.58},{x:0.92,y:0.50},{x:0.98,y:0.55}
     ],
-    waterZones: [{x:0.50,y:0.50,rx:0.07,ry:0.08}],
-    obstacles: [{x:0.42,y:0.50,r:0.05},{x:0.28,y:0.50,r:0.045}],
+    // Pond sits in the open merge pocket — clear of both lanes for boats
+    waterZones: [{x:0.50,y:0.50,rx:0.09,ry:0.07}],
+    obstacles: [{x:0.30,y:0.50,r:0.04},{x:0.18,y:0.50,r:0.035}],
     decorations: [
-      {type:'rock',x:0.28,y:0.50},{type:'rock',x:0.42,y:0.50},{type:'rock',x:0.15,y:0.45},
-      {type:'rock',x:0.85,y:0.70},{type:'rock',x:0.12,y:0.12},{type:'rock',x:0.88,y:0.18},
-      {type:'lake',x:0.50,y:0.50}
+      {type:'rock',x:0.18,y:0.50},{type:'rock',x:0.30,y:0.50},{type:'rock',x:0.12,y:0.12},
+      {type:'rock',x:0.88,y:0.18},{type:'rock',x:0.85,y:0.78},{type:'rock',x:0.40,y:0.12},
+      {type:'rock',x:0.40,y:0.88},{type:'lake',x:0.50,y:0.50},
+      {type:'ember',x:0.25,y:0.38},{type:'ember',x:0.25,y:0.62},{type:'ember',x:0.62,y:0.35},
+      {type:'ember',x:0.62,y:0.65},{type:'crack',x:0.15,y:0.35},{type:'crack',x:0.15,y:0.65}
     ]
   }
 ];
 
-/** Maps shown on a difficulty tab: 0=Beginner, 1=Intermediate, 2=Advanced, 3=Expert */
-function mapsForTab(diffIdx) {
-  const want = (diffIdx | 0) + 1; // 1..4
+/** Maps shown on a map-pack tab: 0=Beginner, 1=Intermediate, 2=Advanced, 3=Expert */
+function mapsForTab(tierIdx) {
+  const want = (tierIdx | 0) + 1; // 1..4
   return MAPS.map((m, i) => ({ m, i })).filter(x => (x.m.difficulty || 1) === want);
 }
 
@@ -1333,15 +1386,42 @@ function clientToGame(clientX, clientY) {
 }
 function toGame(cx, cy) { return { x: (cx - ox) / scale, y: (cy - oy) / scale }; }
 
+// Shared map coordinate space (path, water, obstacles, decorations must match)
+// Desktop: small bottom pad (sidebar is side dock). Mobile keeps extra room via resize().
+const MAP_TOP = 50, MAP_BOTTOM_PAD = 56, MAP_MARGIN_X = 16;
+function mapPlayH() { return H - MAP_TOP - MAP_BOTTOM_PAD; }
+/** Keep BASE / path exit clear of the tower sidebar. */
+function mapMarginRight() {
+  try {
+    if (typeof sidebarGameW === 'function' && !isMobileUi()) return Math.max(130, sidebarGameW() + 36);
+  } catch (e) {}
+  return 130;
+}
+function mapUsableW() { return Math.max(400, W - MAP_MARGIN_X - mapMarginRight()); }
+/** Normalized 0–1 → game world (includes MAP_TOP). */
+function normToWorld(nx, ny) {
+  return {
+    x: MAP_MARGIN_X + clamp(nx, 0, 1) * mapUsableW(),
+    y: MAP_TOP + clamp(ny, 0, 1) * mapPlayH()
+  };
+}
+/** Normalized 0–1 → map-cache canvas (y=0 at top of playfield). */
+function normToCache(nx, ny) {
+  return {
+    x: MAP_MARGIN_X + clamp(nx, 0, 1) * mapUsableW(),
+    y: clamp(ny, 0, 1) * mapPlayH()
+  };
+}
+function placementYMax() {
+  return isMobileUi() ? H - 50 : H - 40;
+}
+function inPlayfield(x, y) {
+  return y > 55 && y < placementYMax() && x > MAP_MARGIN_X && x < W - mapMarginRight() + 50;
+}
+
 function buildPath(map) {
   const paths = [];
-  // Keep playfield clear of HUD: top bar 50px, bottom panel 120px, side margins 16px
-  const mapTop = 50, mapH = H - 170;
-  const marginX = 16, usableW = W - marginX * 2;
-  const toWorld = (p) => ({
-    x: marginX + clamp(p.x, 0, 1) * usableW,
-    y: mapTop + clamp(p.y, 0, 1) * mapH
-  });
+  const toWorld = (p) => normToWorld(p.x, p.y);
   if (map.multiPath) {
     paths.push(map.path.map(toWorld));
     paths.push(map.path2.map(toWorld));
@@ -1409,9 +1489,15 @@ function spawnFreezeFx(x, y, r) {
 function createBloon(type, pathIdx, progress, camo) {
   const def = BLOON_TYPES[type];
   if (!def) return null;
+  // Hard/Expert: scale shell HP for ceramic + MOAB-class only (1-HP layers stay 1)
+  let hp = def.hp;
+  const diff = DIFFS[selectedDiff];
+  if (diff && diff.hpMul && diff.hpMul !== 1 && (def.moab || type === 'ceramic') && def.hp > 1) {
+    hp = Math.max(1, Math.ceil(def.hp * diff.hpMul));
+  }
   return {
     type, pathIdx: pathIdx||0, progress: progress||0,
-    hp: def.hp, maxHp: def.hp, camo: !!(camo || def.alwaysCamo),
+    hp, maxHp: hp, camo: !!(camo || def.alwaysCamo),
     frozen: 0, freezeSlow: 1, permafrost: 0,
     glueSlow: 1, glueTime: 0,
     x: 0, y: 0, alive: true, rbe: def.rbe,
@@ -1423,15 +1509,27 @@ function spawnBloon(type, pathIdx, camo) {
   if (b) bloons.push(b);
   return b;
 }
+/** Apply damage. Returns true if damage/effect landed (not blocked). Pop is a side effect. */
 function damageBloon(b, dmg, source) {
   if (!b.alive) return false;
   const def = BLOON_TYPES[b.type];
   if (source) {
     if (def.immune) {
+      // Bomb Blitz uses projType 'blitz' to ignore black bomb immunity
       if (def.immune.includes('bomb') && source.projType === 'bomb') return false;
-      if (def.immune.includes('magic') && (source.projType === 'magic' || source.projType === 'laser' || source.projType === 'plasma')) return false;
+      // Purple magic/energy: blocked unless tower canPopPurple (Archmage, etc.)
+      if (def.immune.includes('magic') && (source.projType === 'magic' || source.projType === 'laser' || source.projType === 'plasma')) {
+        if (!source.canPopPurple) return false;
+      }
       if (def.immune.includes('sharp') && !source.canPopLead && ['dart','tack','spike','sniper','shuriken','boomerang','water'].includes(source.projType)) return false;
       if (def.immune.includes('freeze') && source.projType === 'freeze') return false;
+    }
+    // Non-energy towers that can't pop purple (wizard base is energy-immune path above)
+    if (b.type === 'purple' && source.canPopPurple === false && source.projType !== 'bomb' && source.projType !== 'blitz') {
+      // Only enforce flag when explicitly false (wizard); most towers omit/true
+      if (source.projType === 'magic' || source.projType === 'laser' || source.projType === 'plasma') {
+        /* already handled */
+      }
     }
     if (b.frozen > 0 && !source.canPopFrozen && source.projType !== 'freeze') return false;
     if (b.camo && !source.canSeeCamo) return false;
@@ -1439,16 +1537,18 @@ function damageBloon(b, dmg, source) {
   let actual = dmg;
   if (def.moab && source && source.moabMul) actual *= source.moabMul;
   b.hp -= actual;
-  if (b.hp <= 0) { popBloon(b); return true; }
-  return false;
+  if (b.hp <= 0) popBloon(b);
+  return true; // damage applied (pierce should consume)
 }
 function popBloon(b) {
   if (!b.alive) return;
   b.alive = false;
   const def = BLOON_TYPES[b.type];
-  // Every pop pays at least $1 (BTD-style cash per layer)
+  // Every pop pays at least $1 (BTD-style cash per layer); soft taper late-game
   const cashMul = (DIFFS[selectedDiff] && DIFFS[selectedDiff].cashMul) || 1;
-  const gained = Math.max(1, Math.round((def.cash || 1) * cashMul));
+  let gained = Math.max(1, Math.round((def.cash || 1) * cashMul));
+  if (!def.moab && round > 80) gained = Math.max(1, Math.floor(gained * 0.75));
+  else if (!def.moab && round > 50) gained = Math.max(1, Math.floor(gained * 0.85));
   cash += gained; totalPopped++;
   if (def.moab) { spawnExplosion(b.x, b.y, def.radius); sfx('explode'); }
   else { spawnPop(b.x, b.y); sfx('pop'); }
@@ -1488,7 +1588,7 @@ function createTower(type, x, y) {
     glueSlow: def.glueSlow || 0.5, glueTime: def.glueTime || 3,
     fireball: false, wallOfFire: false, arctic: false, permafrost: false, sunAvatar: false,
     seeking: !!def.seeking, triple: false, doubleShot: false, multiShot: 0,
-    fanClub: false, sabotage: false, glueMoab: false,
+    fanClub: false, sabotage: false, glueMoab: false, bombBlitz: false,
     // BTD6 paths: [top, mid, bot] tiers 0–5
     paths: [0, 0, 0],
     targeting: 'first',
@@ -1559,9 +1659,11 @@ function applyPathChanges(tower, c) {
   if (c.fanClub) tower.fanClub = true;
   if (c.sabotage) tower.sabotage = true;
   if (c.glueMoab) tower.glueMoab = true;
-  if (c.glueSlow) tower.glueSlow = Math.max(0.12, (tower.glueSlow || 0.55) - c.glueSlow);
+  if (c.bombBlitz) tower.bombBlitz = true;
+  if (c.glueSlow) tower.glueSlow = Math.max(0.20, (tower.glueSlow || 0.55) - c.glueSlow);
   if (c.glueTime) tower.glueTime = (tower.glueTime || 2.8) + c.glueTime;
   if (c.special) tower.special = c.special;
+  if (c.projType === 'ice') tower.special = null; // Icicles leave freeze aura; shoot pierce shards
   // visual power growth
   const top = Math.max(tower.paths[0], tower.paths[1], tower.paths[2]);
   tower.spriteSize = (TOWER_DEFS[tower.type].spriteSize || 52) + top * 2 + (top >= 5 ? 6 : 0);
@@ -1659,10 +1761,30 @@ function fireTower(tower, target) {
   const shotCount = tower.multiShot > 0 ? tower.multiShot
     : (tower.sunAvatar ? 3 : (tower.triple ? 3 : (tower.doubleShot ? 2 : 1)));
   if (tower.projType === 'sniper') {
-    for (let s = 0; s < shotCount; s++) {
-      damageBloon(target, tower.damage, tower);
+    // Instant hits; pierce = bounce chain to other bloons (Shrapnel / Bouncing Bullet)
+    const hitSet = [];
+    const maxHits = Math.max(1, (tower.pierce || 1) * shotCount);
+    let cur = target;
+    let prevX = tower.x, prevY = tower.y;
+    for (let n = 0; n < maxHits && cur; n++) {
+      damageBloon(cur, tower.damage, tower);
+      hitSet.push(cur);
+      particles.push({
+        x: prevX, y: prevY, x2: cur.x, y2: cur.y,
+        life: 0.08, maxLife: 0.08, color: n === 0 ? '#fff59d' : '#ffe082', type: 'line'
+      });
+      prevX = cur.x; prevY = cur.y;
+      let next = null, bestP = -1;
+      const r2 = tower.range * tower.range;
+      const inf = tower.special === 'infinite_range';
+      for (const b of bloons) {
+        if (!b.alive || hitSet.includes(b)) continue;
+        if (b.camo && !tower.canSeeCamo) continue;
+        if (!inf && dist2(tower.x, tower.y, b.x, b.y) > r2) continue;
+        if (b.progress > bestP) { bestP = b.progress; next = b; }
+      }
+      cur = next;
     }
-    particles.push({ x: tower.x, y: tower.y, x2: target.x, y2: target.y, life: 0.08, maxLife: 0.08, color: '#fff59d', type: 'line' });
     return;
   }
   const isHoming = ['magic','laser','plasma'].includes(tower.projType) || !!tower.seeking;
@@ -1709,18 +1831,16 @@ function overSidebar(x, y) {
   if (sidebarSide === 'right') return screenX > window.innerWidth - SIDEBAR_CSS_W - pad;
   return screenX < SIDEBAR_CSS_W + pad;
 }
-/** Map water ellipse in game coords. */
+/** Map water ellipse in game coords (same space as buildPath). */
 function isOnWater(x, y) {
   const map = MAPS[selectedMap];
   if (!map || !map.waterZones || !map.waterZones.length) return false;
-  const mapTop = 50, mapH = H - 170;
   for (const z of map.waterZones) {
-    const cx = z.x * W;
-    const cy = mapTop + z.y * mapH;
-    const rx = (z.rx != null ? z.rx : z.r || 0.1) * W;
-    const ry = (z.ry != null ? z.ry : z.r || 0.1) * mapH;
-    const dx = (x - cx) / Math.max(8, rx);
-    const dy = (y - cy) / Math.max(8, ry);
+    const c = normToWorld(z.x, z.y);
+    const rx = (z.rx != null ? z.rx : z.r || 0.1) * mapUsableW();
+    const ry = (z.ry != null ? z.ry : z.r || 0.1) * mapPlayH();
+    const dx = (x - c.x) / Math.max(8, rx);
+    const dy = (y - c.y) / Math.max(8, ry);
     if (dx * dx + dy * dy <= 1) return true;
   }
   return false;
@@ -1728,28 +1848,25 @@ function isOnWater(x, y) {
 function canPlace(x, y, type) {
   type = type || placingTower;
   const def = type ? TOWER_DEFS[type] : null;
-  // Leave room for HUD / mobile bottom bar
-  const bottomLimit = isMobileUi() ? H - 50 : H - 30;
-  if (y < 55 || y > bottomLimit) return false;
+  if (!inPlayfield(x, y)) return false;
   if (overSidebar(x, y)) return false;
-  if (x < 16 || x > W - 16) return false;
-  for (const p of gamePaths) if (distToPath(x, y, p) < 32) return false;
   for (const t of towers) if (dist(x, y, t.x, t.y) < 40) return false;
   const map = MAPS[selectedMap];
-  // Map obstacles (rock piles, stumps) block placement
   if (map.obstacles) {
-    const mapTop = 50, mapH = H - 170;
     for (const o of map.obstacles) {
-      const ox = o.x * W, oy = mapTop + o.y * mapH;
-      const or = (o.r || 0.08) * Math.min(W, mapH);
-      if (dist(x, y, ox, oy) < or + 18) return false;
+      const c = normToWorld(o.x, o.y);
+      const or = (o.r || 0.08) * Math.min(mapUsableW(), mapPlayH());
+      if (dist(x, y, c.x, c.y) < or + 18) return false;
     }
   }
   const water = isOnWater(x, y);
   if (def && def.waterOnly) {
-    if (!water) return false; // boat / sub: water only
-  } else if (water) {
-    return false; // land towers cannot sit on water
+    if (!water) return false;
+    // Boats may sit near path shores (tighter clearance than land towers)
+    for (const p of gamePaths) if (distToPath(x, y, p) < 16) return false;
+  } else {
+    for (const p of gamePaths) if (distToPath(x, y, p) < 32) return false;
+    if (water) return false;
   }
   return true;
 }
@@ -1805,7 +1922,7 @@ function terrainTileKeys(terrain) {
     case 'snow': return ['tile_snow', 'tile_snow_alt'];
     case 'sand': return ['tile_sand', 'tile_sand', 'tile_dirt'];
     case 'candy': return ['tile_grass', 'tile_grass_alt'];
-    case 'lava': return ['tile_lava_base', 'tile_lava'];
+    case 'lava': return ['tile_lava_base', 'tile_lava', 'tile_dark'];
     case 'dark': return ['tile_dark', 'tile_dark_alt'];
     default: return ['tile_grass', 'tile_grass_alt'];
   }
@@ -1814,151 +1931,246 @@ function terrainFillColor(terrain) {
   switch (terrain) {
     case 'snow': return '#dce9f5';
     case 'sand': return '#e8c97a';
-    case 'candy': return '#4caf50';
-    case 'lava': return '#3a201c';
+    case 'candy': return '#7ed957';
+    case 'lava': return '#2a1510';
     case 'dark': return '#2a2e48';
-    default: return '#5cb04a'; // bright BTD meadow green
+    default: return '#5cb04a';
   }
 }
 function pathColors(map) {
   const style = (map && map.pathStyle) || map;
   switch (style) {
-    case 'stone': return { edge: '#5a5a5a', fill: '#9e9e9e', dash: 'rgba(255,255,255,0.28)', width: 42 };
-    case 'road': return { edge: '#2a2a2a', fill: '#4a4a4a', dash: 'rgba(255,220,40,0.85)', width: 44 };
-    case 'candy': return { edge: '#c2185b', fill: '#ff8fb8', dash: 'rgba(255,255,255,0.55)', width: 42 };
-    case 'snow': return { edge: '#8aa0b8', fill: '#c5d4e4', dash: 'rgba(255,255,255,0.35)', width: 40 };
-    case 'sand': return { edge: '#2a2a2a', fill: '#4a4a4a', dash: 'rgba(255,220,40,0.85)', width: 44 };
-    case 'lava': return { edge: '#4a2010', fill: '#6b3a28', dash: 'rgba(255,140,60,0.25)', width: 40 };
-    case 'dark': return { edge: '#1a1a2e', fill: '#3d4260', dash: 'rgba(180,160,255,0.2)', width: 40 };
-    default: return { edge: '#6b6b6b', fill: '#a0a0a0', dash: 'rgba(255,255,255,0.25)', width: 40 };
+    case 'stone': return { edge: '#5a5a5a', fill: '#9e9e9e', dash: 'rgba(255,255,255,0.28)', width: 42, shoulder: 'rgba(90,140,60,0.35)' };
+    case 'road': return { edge: '#2a2a2a', fill: '#4a4a4a', dash: 'rgba(255,220,40,0.85)', width: 44, shoulder: 'rgba(60,50,40,0.4)' };
+    case 'candy': return { edge: '#c2185b', fill: '#ff8fb8', dash: 'rgba(255,255,255,0.55)', width: 42, shoulder: 'rgba(255,180,220,0.35)' };
+    case 'snow': return { edge: '#7a90a8', fill: '#c8d8e8', dash: 'rgba(255,255,255,0.45)', width: 40, shoulder: 'rgba(180,210,235,0.45)' };
+    case 'sand': return { edge: '#2a2a2a', fill: '#4a4a4a', dash: 'rgba(255,220,40,0.85)', width: 44, shoulder: 'rgba(200,160,80,0.35)' };
+    case 'lava': return { edge: '#1a0804', fill: '#8b4518', dash: 'rgba(255,160,60,0.55)', width: 42, shoulder: 'rgba(255,70,20,0.22)' };
+    case 'dark': return { edge: '#1a1a2e', fill: '#3d4260', dash: 'rgba(180,160,255,0.22)', width: 40, shoulder: 'rgba(40,40,70,0.4)' };
+    default: return { edge: '#6b6b6b', fill: '#a0a0a0', dash: 'rgba(255,255,255,0.25)', width: 40, shoulder: 'rgba(0,0,0,0.12)' };
+  }
+}
+function drawTerrainOverlay(g, map, mapH) {
+  const terrain = map.terrain;
+  // Soft noise patches even when tiles fail to load
+  const seed = (map.name || '').length * 17 + 3;
+  for (let i = 0; i < 48; i++) {
+    const n = ((seed * (i + 1) * 1103515245 + 12345) >>> 0) % 1000;
+    const x = ((n * 37) % 1000) / 1000 * W;
+    const y = ((n * 91) % 1000) / 1000 * mapH;
+    const r = 18 + (n % 40);
+    if (terrain === 'candy') {
+      g.fillStyle = i % 3 === 0 ? 'rgba(255,140,200,0.18)' : 'rgba(120,220,255,0.12)';
+    } else if (terrain === 'lava') {
+      g.fillStyle = i % 2 ? 'rgba(255,80,20,0.12)' : 'rgba(40,10,5,0.2)';
+    } else if (terrain === 'snow') {
+      g.fillStyle = 'rgba(255,255,255,0.18)';
+    } else if (terrain === 'dark') {
+      g.fillStyle = 'rgba(20,20,50,0.18)';
+    } else if (terrain === 'sand') {
+      g.fillStyle = 'rgba(255,220,140,0.14)';
+    } else {
+      g.fillStyle = i % 2 ? 'rgba(40,120,40,0.10)' : 'rgba(255,255,255,0.06)';
+    }
+    g.beginPath(); g.ellipse(x, y, r, r * 0.7, 0, 0, Math.PI * 2); g.fill();
+  }
+  if (terrain === 'candy') {
+    const grd = g.createLinearGradient(0, 0, W, mapH);
+    grd.addColorStop(0, 'rgba(255,105,180,0.32)');
+    grd.addColorStop(0.35, 'rgba(180,255,140,0.18)');
+    grd.addColorStop(0.7, 'rgba(130,200,255,0.22)');
+    grd.addColorStop(1, 'rgba(255,180,220,0.28)');
+    g.fillStyle = grd;
+    g.fillRect(0, 0, W, mapH);
+    // sugar speckles
+    for (let i = 0; i < 60; i++) {
+      const n = ((seed * (i + 7) * 2654435761) >>> 0) % 1000;
+      g.fillStyle = ['#ff8a80', '#fff59d', '#ce93d8', '#80d8ff'][i % 4];
+      g.globalAlpha = 0.45;
+      g.beginPath();
+      g.arc((n / 1000) * W, ((n * 7) % 1000) / 1000 * mapH, 2 + (i % 3), 0, Math.PI * 2);
+      g.fill();
+    }
+    g.globalAlpha = 1;
+  }
+  if (terrain === 'lava') {
+    g.fillStyle = 'rgba(255,60,0,0.08)';
+    g.fillRect(0, 0, W, mapH);
+    for (let i = 0; i < 14; i++) {
+      const x0 = (i * 97 + 40) % W, y0 = (i * 53 + 30) % mapH;
+      g.strokeStyle = 'rgba(255,90,30,0.35)';
+      g.lineWidth = 2;
+      g.beginPath();
+      g.moveTo(x0, y0);
+      g.quadraticCurveTo(x0 + 40, y0 + 20, x0 + 70, y0 - 10);
+      g.stroke();
+    }
+  }
+  if (terrain === 'snow') {
+    g.fillStyle = 'rgba(220,235,250,0.25)';
+    g.fillRect(0, 0, W, mapH);
+  }
+}
+function drawWaterZone(g, z, map, mapH) {
+  const c = normToCache(z.x, z.y);
+  const rx = (z.rx || 0.1) * mapUsableW(), ry = (z.ry || 0.1) * mapPlayH();
+  const snow = map.terrain === 'snow';
+  const lava = map.terrain === 'lava';
+  // Shore ring
+  g.fillStyle = snow ? 'rgba(180,210,235,0.55)' : lava ? 'rgba(80,40,20,0.5)' : 'rgba(120,180,90,0.35)';
+  g.beginPath(); g.ellipse(c.x, c.y, rx * 1.12, ry * 1.12, 0, 0, Math.PI * 2); g.fill();
+  const grd = g.createRadialGradient(c.x - rx * 0.2, c.y - ry * 0.2, 4, c.x, c.y, Math.max(rx, ry));
+  if (snow) {
+    grd.addColorStop(0, '#e8f4ff');
+    grd.addColorStop(0.55, '#90caf9');
+    grd.addColorStop(1, '#5b9bd5');
+  } else if (lava) {
+    grd.addColorStop(0, '#4fc3f7');
+    grd.addColorStop(0.6, '#0288d1');
+    grd.addColorStop(1, '#01579b');
+  } else {
+    grd.addColorStop(0, '#4fc3f7');
+    grd.addColorStop(0.55, '#0288d1');
+    grd.addColorStop(1, '#01579b');
+  }
+  g.fillStyle = grd;
+  g.beginPath(); g.ellipse(c.x, c.y, rx, ry, 0, 0, Math.PI * 2); g.fill();
+  // Foam / ice rim
+  g.strokeStyle = snow ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.4)';
+  g.lineWidth = snow ? 3 : 2;
+  g.beginPath(); g.ellipse(c.x, c.y, rx * 0.92, ry * 0.92, 0, 0, Math.PI * 2); g.stroke();
+  if (snow) {
+    g.fillStyle = 'rgba(255,255,255,0.35)';
+    g.beginPath(); g.ellipse(c.x - rx * 0.15, c.y - ry * 0.2, rx * 0.45, ry * 0.25, -0.3, 0, Math.PI * 2); g.fill();
   }
 }
 function buildMapCache() {
   const map = MAPS[selectedMap];
-  const mapTop = 50, mapH = H - 170;
+  const mapH = mapPlayH();
   const TS = 64;
   const cols = Math.ceil(W / TS) + 1;
   const rows = Math.ceil(mapH / TS) + 1;
   const off = document.createElement('canvas');
-  off.width = W; off.height = mapH + 20;
+  off.width = W; off.height = mapH;
   const g = off.getContext('2d');
-  // solid base (no seams)
   g.fillStyle = terrainFillColor(map.terrain);
   g.fillRect(0, 0, off.width, off.height);
-  // soft tile pattern
   const keys = terrainTileKeys(map.terrain);
-  g.globalAlpha = map.terrain === 'candy' ? 0.35 : 0.5;
+  g.globalAlpha = map.terrain === 'candy' ? 0.28 : map.terrain === 'lava' ? 0.45 : 0.55;
+  let anyTile = false;
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
       const key = keys[(row * 3 + col * 2) % keys.length];
       const im = img(key) || img('tile_grass');
-      if (im) g.drawImage(im, col * TS, row * TS, TS, TS);
+      if (im) {
+        anyTile = true;
+        g.drawImage(im, col * TS, row * TS, TS, TS);
+      }
     }
   }
   g.globalAlpha = 1;
-  // candy overlay tint
-  if (map.terrain === 'candy') {
-    g.fillStyle = 'rgba(100,200,80,0.15)';
+  drawTerrainOverlay(g, map, mapH);
+  if (!anyTile && map.terrain === 'lava') {
+    // soft magma base (no hard tile grid stripes)
+    const lg = g.createLinearGradient(0, 0, W, mapH);
+    lg.addColorStop(0, '#2a120c');
+    lg.addColorStop(0.5, '#3d1a10');
+    lg.addColorStop(1, '#24100a');
+    g.fillStyle = lg;
     g.fillRect(0, 0, W, mapH);
-  }
-  // water zones under path (ponds / river)
-  if (map.waterZones) {
-    for (const z of map.waterZones) {
-      const cx = z.x * W, cy = z.y * mapH;
-      const rx = (z.rx || 0.1) * W, ry = (z.ry || 0.1) * mapH;
-      const grd = g.createRadialGradient(cx - rx * 0.2, cy - ry * 0.2, 4, cx, cy, Math.max(rx, ry));
-      grd.addColorStop(0, map.terrain === 'snow' ? '#e3f2fd' : '#4fc3f7');
-      grd.addColorStop(0.55, map.terrain === 'snow' ? '#90caf9' : '#0288d1');
-      grd.addColorStop(1, map.terrain === 'snow' ? '#64b5f6' : '#01579b');
-      g.fillStyle = grd;
-      g.beginPath(); g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); g.fill();
-      g.strokeStyle = 'rgba(255,255,255,0.35)'; g.lineWidth = 2;
-      g.beginPath(); g.ellipse(cx, cy, rx * 0.92, ry * 0.92, 0, 0, Math.PI * 2); g.stroke();
+    for (let i = 0; i < 28; i++) {
+      const x = (i * 137 + 40) % W, y = (i * 89 + 20) % mapH;
+      g.fillStyle = 'rgba(255,90,30,' + (0.08 + (i % 4) * 0.03) + ')';
+      g.beginPath(); g.ellipse(x, y, 30 + (i % 5) * 8, 18 + (i % 3) * 6, 0.2, 0, Math.PI * 2); g.fill();
     }
+  }
+  if (map.waterZones) {
+    for (const z of map.waterZones) drawWaterZone(g, z, map, mapH);
   }
   // soft vignette
   const vg = g.createRadialGradient(W/2, mapH/2, mapH*0.2, W/2, mapH/2, mapH*0.85);
   vg.addColorStop(0, 'rgba(0,0,0,0)');
-  vg.addColorStop(1, 'rgba(0,0,0,0.10)');
+  vg.addColorStop(1, map.terrain === 'lava' ? 'rgba(40,0,0,0.28)' : 'rgba(0,0,0,0.12)');
   g.fillStyle = vg;
   g.fillRect(0, 0, W, mapH);
 
   const pc = pathColors(map);
   const pw = pc.width || 40;
-  // clean path ribbons (stone / road / candy)
   for (const pts of gamePaths) {
     g.lineCap = 'round'; g.lineJoin = 'round';
-    // shadow
-    g.strokeStyle = 'rgba(0,0,0,0.20)';
+    // grassy / thematic shoulder
+    if (pc.shoulder) {
+      g.strokeStyle = pc.shoulder;
+      g.lineWidth = pw + 16;
+      g.beginPath();
+      g.moveTo(pts[0].x, pts[0].y - MAP_TOP);
+      for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x, pts[i].y - MAP_TOP);
+      g.stroke();
+    }
+    g.strokeStyle = 'rgba(0,0,0,0.22)';
     g.lineWidth = pw + 6;
     g.beginPath();
-    g.moveTo(pts[0].x + 2, pts[0].y - mapTop + 3);
-    for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x + 2, pts[i].y - mapTop + 3);
+    g.moveTo(pts[0].x + 2, pts[0].y - MAP_TOP + 3);
+    for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x + 2, pts[i].y - MAP_TOP + 3);
     g.stroke();
-    // outer edge
     g.strokeStyle = pc.edge;
     g.lineWidth = pw;
     g.beginPath();
-    g.moveTo(pts[0].x, pts[0].y - mapTop);
-    for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x, pts[i].y - mapTop);
+    g.moveTo(pts[0].x, pts[0].y - MAP_TOP);
+    for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x, pts[i].y - MAP_TOP);
     g.stroke();
-    // fill
     g.strokeStyle = pc.fill;
     g.lineWidth = pw - 10;
     g.beginPath();
-    g.moveTo(pts[0].x, pts[0].y - mapTop);
-    for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x, pts[i].y - mapTop);
+    g.moveTo(pts[0].x, pts[0].y - MAP_TOP);
+    for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x, pts[i].y - MAP_TOP);
     g.stroke();
-    // stone block look: short segments
-    if (map.pathStyle === 'stone') {
+    if (map.pathStyle === 'stone' || map.pathStyle === 'snow' || map.pathStyle === 'dark') {
       g.strokeStyle = 'rgba(0,0,0,0.12)';
       g.lineWidth = 1;
       g.setLineDash([18, 10]);
       g.beginPath();
-      g.moveTo(pts[0].x, pts[0].y - mapTop);
-      for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x, pts[i].y - mapTop);
+      g.moveTo(pts[0].x, pts[0].y - MAP_TOP);
+      for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x, pts[i].y - MAP_TOP);
       g.stroke();
       g.setLineDash([]);
     }
-    // center dashes (road yellow / candy white)
-    g.strokeStyle = pc.dash;
-    g.lineWidth = map.pathStyle === 'road' ? 3 : 2;
-    g.setLineDash(map.pathStyle === 'road' ? [14, 16] : [10, 12]);
-    g.beginPath();
-    g.moveTo(pts[0].x, pts[0].y - mapTop);
-    for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x, pts[i].y - mapTop);
-    g.stroke();
-    g.setLineDash([]);
+    // center line only for road / candy / lava (stone uses block dashes above)
+    if (map.pathStyle === 'road' || map.pathStyle === 'candy' || map.pathStyle === 'lava' || map.pathStyle === 'sand') {
+      g.strokeStyle = pc.dash;
+      g.lineWidth = map.pathStyle === 'road' ? 3 : 2;
+      g.setLineDash(map.pathStyle === 'road' || map.pathStyle === 'sand' ? [14, 16] : [10, 12]);
+      g.beginPath();
+      g.moveTo(pts[0].x, pts[0].y - MAP_TOP);
+      for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x, pts[i].y - MAP_TOP);
+      g.stroke();
+      g.setLineDash([]);
+    }
   }
-  // decorations (only off-path)
   for (const d of map.decorations) {
-    const x = d.x * W, y = d.y * mapH;
+    const c = normToCache(d.x, d.y);
     let onPath = false;
     for (const pts of gamePaths) {
-      if (distToPath(x, y + mapTop, pts) < 40) { onPath = true; break; }
+      if (distToPath(c.x, c.y + MAP_TOP, pts) < 40) { onPath = true; break; }
     }
-    if (!onPath || d.type === 'stump' || d.type === 'lake' || d.type === 'castle') {
-      drawDecoTo(g, d.type, x, y, map.terrain);
+    if (!onPath || d.type === 'stump' || d.type === 'lake' || d.type === 'castle' || d.type === 'ember' || d.type === 'crack') {
+      drawDecoTo(g, d.type, c.x, c.y, map.terrain);
     }
   }
-  // entrance portal + exit fort (bloons die / cost lives only at the fort)
   for (const pts of gamePaths) {
-    const sx = pts[0].x, sy = pts[0].y - mapTop;
-    const ex = pts[pts.length-1].x, ey = pts[pts.length-1].y - mapTop;
-    // IN portal
+    const sx = pts[0].x, sy = pts[0].y - MAP_TOP;
+    const ex = pts[pts.length-1].x, ey = pts[pts.length-1].y - MAP_TOP;
     g.fillStyle = 'rgba(46,125,50,0.95)';
     g.beginPath(); g.arc(sx, sy, 16, 0, Math.PI*2); g.fill();
     g.strokeStyle = '#a5d6a7'; g.lineWidth = 3; g.stroke();
     g.fillStyle = '#fff'; g.font = 'bold 11px Segoe UI'; g.textAlign = 'center'; g.textBaseline = 'middle';
     g.fillText('IN', sx, sy);
-    // EXIT fort / base — clear sink so leaks feel intentional
     g.fillStyle = 'rgba(60,20,20,0.92)';
     g.fillRect(ex - 22, ey - 18, 44, 36);
     g.fillStyle = 'rgba(183,28,28,0.95)';
     g.fillRect(ex - 18, ey - 10, 36, 24);
     g.strokeStyle = '#ffcdd2'; g.lineWidth = 2;
     g.strokeRect(ex - 22, ey - 18, 44, 36);
-    // battlements
     g.fillStyle = '#b71c1c';
     for (let i = 0; i < 4; i++) g.fillRect(ex - 20 + i * 11, ey - 24, 8, 8);
     g.fillStyle = '#fff'; g.font = 'bold 10px Segoe UI';
@@ -1971,15 +2183,38 @@ function buildMapCache() {
 function drawDecoTo(g, type, x, y, terrain) {
   const draw = (key, s) => {
     const im = img(key);
-    if (im) g.drawImage(im, x - s/2, y - s/2, s, s);
+    if (im) { g.drawImage(im, x - s/2, y - s/2, s, s); return true; }
+    return false;
   };
   switch (type) {
-    case 'tree': draw('tile_tree', 64); break;
-    case 'tree_star': draw('tile_tree_star', 58); break;
-    case 'bush': draw('tile_bush', 40); break;
-    case 'rock': draw('tile_rock1', 40); break;
+    case 'tree':
+      if (!draw('tile_tree', 64)) {
+        g.fillStyle = terrain === 'snow' ? '#2e7d4f' : '#2e7d32';
+        g.beginPath(); g.moveTo(x, y - 28); g.lineTo(x - 16, y + 8); g.lineTo(x + 16, y + 8); g.fill();
+        g.fillStyle = '#5d4037'; g.fillRect(x - 3, y + 6, 6, 12);
+      }
+      break;
+    case 'tree_star':
+      if (!draw('tile_tree_star', 58)) {
+        g.fillStyle = '#1b5e20';
+        g.beginPath(); g.moveTo(x, y - 26); g.lineTo(x - 14, y + 6); g.lineTo(x + 14, y + 6); g.fill();
+      }
+      break;
+    case 'bush':
+      if (!draw('tile_bush', 40)) {
+        g.fillStyle = '#66bb6a';
+        g.beginPath(); g.arc(x - 6, y, 10, 0, Math.PI * 2); g.arc(x + 6, y, 10, 0, Math.PI * 2); g.arc(x, y - 4, 11, 0, Math.PI * 2); g.fill();
+      }
+      break;
+    case 'rock':
+      if (!draw('tile_rock1', 40)) {
+        g.fillStyle = terrain === 'lava' ? '#4e342e' : terrain === 'snow' ? '#90a4ae' : '#78909c';
+        g.beginPath(); g.ellipse(x, y, 14, 10, 0.2, 0, Math.PI * 2); g.fill();
+        g.fillStyle = 'rgba(255,255,255,0.15)';
+        g.beginPath(); g.ellipse(x - 4, y - 3, 5, 3, 0, 0, Math.PI * 2); g.fill();
+      }
+      break;
     case 'cactus': {
-      // desert cactus from tree recolor-ish stacked ovals
       g.fillStyle = '#43a047';
       g.beginPath(); g.ellipse(x, y, 10, 28, 0, 0, Math.PI * 2); g.fill();
       g.beginPath(); g.ellipse(x - 14, y - 6, 8, 16, -0.5, 0, Math.PI * 2); g.fill();
@@ -1991,19 +2226,46 @@ function drawDecoTo(g, type, x, y, terrain) {
     case 'candy': {
       const cols = ['#e53935', '#ffeb3b', '#ab47bc', '#29b6f6', '#ff7043'];
       g.fillStyle = cols[Math.abs(Math.floor(x * 3 + y) % cols.length)];
-      g.beginPath(); g.arc(x, y, 12, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.arc(x, y, 14, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = '#fff'; g.lineWidth = 3;
+      g.beginPath(); g.arc(x, y, 14, 0, Math.PI * 2); g.stroke();
       g.fillStyle = '#fff';
-      g.beginPath(); g.arc(x - 3, y - 3, 3, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.arc(x - 4, y - 4, 4, 0, Math.PI * 2); g.fill();
+      break;
+    }
+    case 'lollipop': {
+      g.strokeStyle = '#fff'; g.lineWidth = 3;
+      g.beginPath(); g.moveTo(x, y + 18); g.lineTo(x, y); g.stroke();
+      g.fillStyle = '#ef5350';
+      g.beginPath(); g.arc(x, y - 6, 12, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = '#fff59d'; g.lineWidth = 2;
+      g.beginPath(); g.arc(x, y - 6, 7, 0, Math.PI * 1.5); g.stroke();
+      break;
+    }
+    case 'ember': {
+      g.fillStyle = 'rgba(255,120,40,0.55)';
+      g.beginPath(); g.arc(x, y, 8, 0, Math.PI * 2); g.fill();
+      g.fillStyle = 'rgba(255,220,80,0.7)';
+      g.beginPath(); g.arc(x, y - 2, 4, 0, Math.PI * 2); g.fill();
+      break;
+    }
+    case 'crack': {
+      g.strokeStyle = 'rgba(255,80,20,0.55)';
+      g.lineWidth = 2;
+      g.beginPath();
+      g.moveTo(x - 18, y); g.lineTo(x - 4, y + 6); g.lineTo(x + 8, y - 4); g.lineTo(x + 20, y + 2);
+      g.stroke();
       break;
     }
     case 'stump':
-      draw('k133', 80);
-      // rock pile overlay for Logs-style centers
+      if (!draw('k133', 80)) {
+        g.fillStyle = '#6d4c41';
+        g.beginPath(); g.ellipse(x, y, 22, 14, 0, 0, Math.PI * 2); g.fill();
+      }
       draw('tile_rock1', 36);
       draw('tile_rock2', 28);
       break;
     case 'lake': {
-      // water already drawn from waterZones; optional lily pads
       g.fillStyle = 'rgba(76,175,80,0.55)';
       g.beginPath(); g.ellipse(x - 12, y + 4, 10, 6, 0.3, 0, Math.PI * 2); g.fill();
       g.beginPath(); g.ellipse(x + 14, y - 6, 8, 5, -0.2, 0, Math.PI * 2); g.fill();
@@ -2013,7 +2275,11 @@ function drawDecoTo(g, type, x, y, terrain) {
       draw('k180', 72);
       draw('tile_rock2', 36);
       break;
-    default: draw('tile_bush', 36);
+    default:
+      if (!draw('tile_bush', 36)) {
+        g.fillStyle = '#81c784';
+        g.beginPath(); g.arc(x, y, 10, 0, Math.PI * 2); g.fill();
+      }
   }
 }
 
@@ -2028,6 +2294,8 @@ function startGame() {
   placingTower = null; selectedTower = null; roundActive = false; spawnQueue = [];
   betweenRoundTimer = 1.5;
   sidebarSide = 'right';
+  bombBlitzCD = 0;
+  mapStartPending = false;
   gamePaths = buildPath(MAPS[selectedMap]);
   pathMetricsArr = gamePaths.map(p => pathMetrics(p));
   try { buildMapCache(); } catch (e) { console.warn('map cache', e); mapCache = null; }
@@ -2090,7 +2358,7 @@ function endRound() {
   cash += bonus;
   spawnFloat(W/2, 100, '+$' + bonus + ' round', '#ffd700');
   for (const t of towers) {
-    if (t.special === 'income' && t.income > 0) {
+    if (t.income > 0) {
       const inc = Math.floor(t.income * cashMul);
       cash += inc;
       spawnFloat(t.x, t.y - 20, '+$' + inc, '#ffeb3b');
@@ -2113,6 +2381,23 @@ function winGame() {
   }
 }
 function loseGame() { gameState = State.GAME_OVER; sfx('gameover'); }
+
+function triggerBombBlitz(x, y) {
+  if (bombBlitzCD > 0) return;
+  const blitz = towers.find(t => t.bombBlitz);
+  if (!blitz) return;
+  bombBlitzCD = 10;
+  spawnFloat(x, y - 28, 'BOMB BLITZ!', '#ff9800');
+  spawnExplosion(W / 2, H / 2, 220);
+  // projType 'blitz' ignores black bomb immunity (ability wipe must clear all)
+  const src = { canPopLead: true, canPopFrozen: true, canPopPurple: true, projType: 'blitz', moabMul: 1 };
+  for (const b of bloons.slice()) {
+    if (!b.alive) continue;
+    if (BLOON_TYPES[b.type].moab) damageBloon(b, 80, src);
+    else damageBloon(b, 999, src);
+  }
+  sfx('explode');
+}
 
 // ─── UPDATE ──────────────────────────────────────────────────
 function update(rawDt) {
@@ -2142,7 +2427,8 @@ function update(rawDt) {
 }
 function updateGameplay(t, diff) {
   if (!roundActive && bloons.filter(b => b.alive).length === 0 && autoStart && round < maxRounds) {
-    betweenRoundTimer -= t / gameSpeed;
+    // Advance with game time so 2x/3x also speeds between-round wait
+    betweenRoundTimer -= t;
     if (betweenRoundTimer <= 0) startRound();
   }
   if (roundActive) {
@@ -2152,6 +2438,35 @@ function updateGameplay(t, diff) {
       spawnBloon(s.type, s.pathIdx, s.camo);
     }
     if (spawnQueue.length === 0 && bloons.filter(b => b.alive).length === 0) endRound();
+  }
+  for (let i = firePatches.length - 1; i >= 0; i--) {
+    const fp = firePatches[i];
+    fp.life -= t; fp.dmgTimer -= t; fp.frame = (fp.frame || 0) + t * 10;
+    if (fp.dmgTimer <= 0) {
+      fp.dmgTimer = 0.3;
+      for (const b of bloons) {
+        if (b.alive && dist2(fp.x, fp.y, b.x, b.y) < fp.r * fp.r)
+          damageBloon(b, 1, { projType: 'magic', canPopLead: true, canPopFrozen: true });
+      }
+    }
+    if (fp.life <= 0) firePatches.splice(i, 1);
+  }
+  if (bombBlitzCD > 0) bombBlitzCD -= t;
+  // Reset + apply arctic aura before movement so slow takes effect this frame
+  for (const b of bloons) if (b.alive) b.freezeSlow = 1;
+  const fanClubs = towers.filter(tw => tw.fanClub);
+  for (const tower of towers) {
+    tower._fanBuff = 1;
+    if (tower.type === 'dart' && fanClubs.length) {
+      for (const f of fanClubs) {
+        if (dist2(tower.x, tower.y, f.x, f.y) < 170 * 170) { tower._fanBuff = 0.72; break; }
+      }
+    }
+    if (tower.arctic) {
+      for (const b of bloons) {
+        if (b.alive && dist2(tower.x, tower.y, b.x, b.y) <= tower.range * tower.range) b.freezeSlow = 0.5;
+      }
+    }
   }
   for (let i = bloons.length - 1; i >= 0; i--) {
     const b = bloons[i];
@@ -2173,7 +2488,6 @@ function updateGameplay(t, diff) {
     const pos = posOnPath(pts, pm.segs, pm.total, b.progress);
     b.x = pos.x; b.y = pos.y + Math.sin(b.wobble) * 1.5;
     if (b.progress >= 1) {
-      // Leak at the BASE fort — lives lost = remaining RBE
       const loss = Math.max(1, b.rbe | 0);
       lives -= loss;
       b.alive = false;
@@ -2182,20 +2496,9 @@ function updateGameplay(t, diff) {
       spawnFloat(b.x, b.y - 12, '−' + loss + ' ❤', '#ff5252');
       spawnFloat(b.x, b.y + 8, 'LEAK!', '#ff8a80');
       beep(180, 0.12, 'sawtooth', 0.08, -80);
+      triggerBombBlitz(b.x, b.y);
       if (lives <= 0) { lives = 0; loseGame(); }
     }
-  }
-  for (let i = firePatches.length - 1; i >= 0; i--) {
-    const fp = firePatches[i];
-    fp.life -= t; fp.dmgTimer -= t; fp.frame = (fp.frame || 0) + t * 10;
-    if (fp.dmgTimer <= 0) {
-      fp.dmgTimer = 0.3;
-      for (const b of bloons) {
-        if (b.alive && dist2(fp.x, fp.y, b.x, b.y) < fp.r * fp.r)
-          damageBloon(b, 1, { projType: 'magic', canPopLead: true, canPopFrozen: true });
-      }
-    }
-    if (fp.life <= 0) firePatches.splice(i, 1);
   }
   for (const tower of towers) {
     tower.cooldown -= t;
@@ -2204,7 +2507,6 @@ function updateGameplay(t, diff) {
     if (tower.wallCD > 0) tower.wallCD -= t;
     if (tower.special === 'income') continue;
 
-    // Smooth aim toward current target (no floating bob)
     const aimT = getTarget(tower);
     if (aimT && towerCanAim(tower.type)) {
       const want = Math.atan2(aimT.y - tower.y, aimT.x - tower.x);
@@ -2212,21 +2514,16 @@ function updateGameplay(t, diff) {
       tower.angle = tower.aimAngle;
     }
 
-    if (tower.arctic) {
-      for (const b of bloons) {
-        if (b.alive && dist2(tower.x, tower.y, b.x, b.y) <= tower.range * tower.range) b.freezeSlow = 0.5;
-      }
-    }
     if (tower.cooldown <= 0) {
-      if (tower.projType === 'freeze') {
+      if (tower.projType === 'freeze' || tower.special === 'freeze') {
         let any = null;
         for (const b of bloons) {
           if (b.alive && dist2(tower.x, tower.y, b.x, b.y) <= tower.range * tower.range) { any = b; break; }
         }
-        if (any) { fireTower(tower, any); tower.cooldown = tower.fireRate; }
+        if (any) { fireTower(tower, any); tower.cooldown = tower.fireRate * (tower._fanBuff || 1); }
       } else {
         const target = getTarget(tower);
-        if (target) { fireTower(tower, target); tower.cooldown = tower.fireRate; }
+        if (target) { fireTower(tower, target); tower.cooldown = tower.fireRate * (tower._fanBuff || 1); }
       }
     }
   }
@@ -2246,19 +2543,24 @@ function updateGameplay(t, diff) {
       if (!b.alive || p.hit.includes(b)) continue;
       const br = BLOON_TYPES[b.type].radius;
       if (dist2(p.x, p.y, b.x, b.y) < (br + p.r) * (br + p.r)) {
-        p.hit.push(b);
         if (p.projType === 'bomb' || p.projType === 'fireball' || (p.projType === 'water' && p.aoeRadius > 0)) {
+          p.hit.push(b);
           const ar = p.aoeRadius || 40;
           for (const b2 of bloons) {
-            if (b2.alive && dist2(p.x, p.y, b2.x, b2.y) < ar * ar) damageBloon(b2, Math.max(1, p.damage), p);
+            if (b2.alive && dist2(p.x, p.y, b2.x, b2.y) < ar * ar) {
+              damageBloon(b2, Math.max(1, p.damage), p);
+              if (p.source && p.source.freezeTime > 0) freezeBloon(b2, p.source.freezeTime, false, false);
+            }
           }
           spawnExplosion(p.x, p.y, ar); sfx(p.projType === 'water' ? 'pop' : 'explode'); hit = true; break;
         } else if (p.projType === 'glue') {
+          p.hit.push(b);
           const isMoab = !!BLOON_TYPES[b.type].moab;
           if (!isMoab || p.source && p.source.glueMoab) {
             b.glueSlow = Math.min(b.glueSlow || 1, p.glueSlow || 0.5);
             b.glueTime = Math.max(b.glueTime || 0, p.glueTime || 3);
           }
+          if (p.source && p.source.freezeTime > 0 && !isMoab) freezeBloon(b, p.source.freezeTime, false, false);
           if (p.damage > 0) damageBloon(b, p.damage, p);
           if (p.aoeRadius > 0) {
             for (const b2 of bloons) {
@@ -2268,13 +2570,39 @@ function updateGameplay(t, diff) {
                   b2.glueSlow = Math.min(b2.glueSlow || 1, p.glueSlow || 0.5);
                   b2.glueTime = Math.max(b2.glueTime || 0, p.glueTime || 3);
                 }
+                if (p.source && p.source.freezeTime > 0 && !BLOON_TYPES[b2.type].moab) freezeBloon(b2, p.source.freezeTime, false, false);
               }
             }
           }
           p.pierce--;
           if (p.pierce <= 0) { hit = true; break; }
+        } else if (p.projType === 'shuriken' && p.aoeRadius > 0) {
+          const landed = damageBloon(b, p.damage, p);
+          if (!landed) continue; // blocked (camo/lead) — do not consume pierce
+          p.hit.push(b);
+          const ar = p.aoeRadius;
+          for (const b2 of bloons) {
+            if (b2.alive && dist2(p.x, p.y, b2.x, b2.y) < ar * ar) {
+              if (p.source && p.source.freezeTime > 0) freezeBloon(b2, p.source.freezeTime, false, false);
+              if (b2 !== b) damageBloon(b2, Math.max(1, Math.floor(p.damage * 0.5)), p);
+            }
+          }
+          spawnExplosion(p.x, p.y, ar * 0.7);
+          p.pierce--;
+          if (p.pierce <= 0) { hit = true; break; }
+        } else if (p.projType === 'ice') {
+          const landed = damageBloon(b, p.damage, p);
+          if (!landed) continue;
+          p.hit.push(b);
+          freezeBloon(b, (p.source && p.source.freezeTime) || 0.8, !!(p.source && p.source.permafrost), false);
+          p.pierce--;
+          if (p.pierce <= 0) { hit = true; break; }
         } else {
-          damageBloon(b, p.damage, p); p.pierce--;
+          // Only consume pierce when damage actually lands (not blocked by lead/camo/purple/frozen)
+          const landed = damageBloon(b, p.damage, p);
+          if (!landed) continue;
+          p.hit.push(b);
+          p.pierce--;
           if (p.pierce <= 0) { hit = true; break; }
         }
       }
@@ -2353,17 +2681,69 @@ canvas.addEventListener('touchend', e => {
 canvas.addEventListener('touchcancel', () => { mouse.down = false; });
 
 window.addEventListener('keydown', e => {
+  const tag = (e.target && e.target.tagName) || '';
+  if (tag === 'INPUT' || tag === 'TEXTAREA') return;
   if (e.key === 'Escape') {
+    if (placingTower) { placingTower = null; updateSidebarDock(); sfx('click'); return; }
+    if (selectedTower) {
+      selectedTower = null;
+      if (typeof hideBtdUpgradePanel === 'function') hideBtdUpgradePanel();
+      sfx('click'); return;
+    }
+    if (gameState === State.DIFFICULTY_SELECT) {
+      gameState = State.MAP_SELECT; mapStartPending = false; sfx('click'); syncBtdUi(); return;
+    }
     if (gameState === State.GAMEPLAY) { gameState = State.PAUSE; sfx('click'); }
     else if (gameState === State.PAUSE) gameState = State.GAMEPLAY;
-    else if (placingTower) { placingTower = null; updateSidebarDock(); }
   }
   if (e.key === ' ' && gameState === State.GAMEPLAY) {
     e.preventDefault();
     if (!roundActive && bloons.filter(b=>b.alive).length === 0) startRound();
   }
-  if ((e.key === '1' || e.key === '2' || e.key === '3') && gameState === State.GAMEPLAY) gameSpeed = parseInt(e.key);
+  if ((e.key === '1' || e.key === '2' || e.key === '3') && gameState === State.GAMEPLAY && !e.shiftKey) {
+    gameSpeed = parseInt(e.key);
+  }
+  // Shift+1–9 / 0: select tower type for placement
+  if (gameState === State.GAMEPLAY && e.shiftKey && e.key >= '0' && e.key <= '9') {
+    const idx = e.key === '0' ? 9 : parseInt(e.key, 10) - 1;
+    const type = TOWER_ORDER[idx];
+    if (type && TOWER_DEFS[type] && cash >= TOWER_DEFS[type].cost) {
+      placingTower = type; selectedTower = null;
+      if (typeof hideBtdUpgradePanel === 'function') hideBtdUpgradePanel();
+      if (typeof renderBtdTowerGrid === 'function') renderBtdTowerGrid();
+      sfx('click');
+    }
+  }
+  // T = cycle targeting on selected tower
+  if ((e.key === 't' || e.key === 'T') && gameState === State.GAMEPLAY && selectedTower) {
+    const modes = ['first', 'last', 'strong', 'close'];
+    selectedTower.targeting = modes[(modes.indexOf(selectedTower.targeting) + 1) % 4];
+    if (typeof renderBtdUpgradePanel === 'function') renderBtdUpgradePanel(true);
+    sfx('click');
+  }
+  // Backspace / Delete = sell selected
+  if ((e.key === 'Backspace' || e.key === 'Delete') && gameState === State.GAMEPLAY && selectedTower) {
+    e.preventDefault();
+    sellSelectedTower();
+  }
 });
+function sellRefundMul() {
+  const d = DIFFS[selectedDiff];
+  return (d && d.sellMul != null) ? d.sellMul : 0.7;
+}
+function sellSelectedTower() {
+  if (!selectedTower) return false;
+  const mul = sellRefundMul();
+  const val = Math.floor(selectedTower.totalCost * mul);
+  cash += val;
+  const idx = towers.indexOf(selectedTower);
+  if (idx >= 0) towers.splice(idx, 1);
+  spawnFloat(selectedTower.x, selectedTower.y, '+$' + val, '#4caf50');
+  selectedTower = null;
+  if (typeof hideBtdUpgradePanel === 'function') hideBtdUpgradePanel();
+  sfx('sell');
+  return true;
+}
 function hitBtn(x, y, w, h) {
   return mouse.x >= x && mouse.x <= x+w && mouse.y >= y && mouse.y <= y+h;
 }
@@ -2416,7 +2796,7 @@ function handleClick() {
     if (placingTower) {
       // Ignore clicks on sidebar strip / mobile bottom bar
       if (overSidebar(mx, my)) return;
-      if (my > 55 && my < H - 20) {
+      if (inPlayfield(mx, my)) {
         if (canPlace(mx, my, placingTower)) {
           const cost = TOWER_DEFS[placingTower].cost;
           if (cash >= cost) {
@@ -2492,25 +2872,26 @@ function drawBloon(b) {
   const size = def.moab ? def.radius * 2.4 : def.radius * 2.6;
   ctx.save();
   ctx.translate(b.x, b.y);
-  if (b.frozen > 0) {
-    ctx.filter = 'hue-rotate(180deg) saturate(0.6) brightness(1.3)';
-  }
+  // Avoid expensive ctx.filter — blue tint via overlay only
   if (def.moab) ctx.rotate(Math.sin(b.propAngle) * 0.05);
   if (!drawImg(key, 0, 0, size, size, def.moab ? 0 : 0)) {
     // fallback oval
     ctx.fillStyle = def.color;
     ctx.beginPath(); ctx.ellipse(0, 0, def.radius*0.85, def.radius, 0, 0, Math.PI*2); ctx.fill();
   }
-  ctx.filter = 'none';
+  if (b.frozen > 0) {
+    ctx.globalAlpha = 0.45;
+    ctx.fillStyle = 'rgba(140, 210, 255, 0.55)';
+    ctx.beginPath(); ctx.ellipse(0, 0, size * 0.42, size * 0.48, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+    const fi = img('fx_freeze_' + (Math.floor(animT * 8) % 6));
+    if (fi) { ctx.globalAlpha = 0.7; ctx.drawImage(fi, -size/2, -size/2, size, size); ctx.globalAlpha = 1; }
+  }
   if (b.camo) {
     ctx.strokeStyle = 'rgba(76,175,80,0.7)';
     ctx.lineWidth = 2; ctx.setLineDash([4, 3]);
     ctx.beginPath(); ctx.arc(0, 0, size/2 + 2, 0, Math.PI*2); ctx.stroke();
     ctx.setLineDash([]);
-  }
-  if (b.frozen > 0) {
-    const fi = img('fx_freeze_' + (Math.floor(animT * 8) % 6));
-    if (fi) ctx.drawImage(fi, -size/2, -size/2, size, size);
   }
   if (def.moab) {
     const pct = b.hp / b.maxHp;
@@ -2539,13 +2920,20 @@ function drawTower(t, preview) {
   const dy = (!preview && canAim) ? -Math.sin(aim) * kickAmt * kickDist : 0;
   const bx = t.x + dx, by = t.y + dy;
 
-  // range ring
+  // range ring (cap visual for infinite-range sniper)
   if (selectedTower === t || preview) {
     const valid = !preview || canPlace(t.x, t.y);
+    const rawR = t.range || def.range;
+    const drawR = (t.special === 'infinite_range' || rawR > 900) ? Math.min(W, H) * 0.42 : rawR;
     ctx.strokeStyle = preview ? (valid ? 'rgba(76,175,80,0.55)' : 'rgba(244,67,54,0.55)') : 'rgba(255,255,255,0.35)';
     ctx.fillStyle = preview ? (valid ? 'rgba(76,175,80,0.1)' : 'rgba(244,67,54,0.1)') : 'rgba(255,255,255,0.05)';
     ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(t.x, t.y, t.range || def.range, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(t.x, t.y, drawR, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    if (t.special === 'infinite_range' || rawR > 900) {
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.font = 'bold 14px Segoe UI'; ctx.textAlign = 'center';
+      ctx.fillText('∞ RANGE', t.x, t.y - drawR - 8);
+    }
   }
 
   // 1) Fixed ground shadow (anchor never moves)
@@ -2748,20 +3136,22 @@ function drawHUD() {
     // Highlight water zones when placing boat/sub
     if (def.waterOnly) {
       const map = MAPS[selectedMap];
-      const mapTop = 50, mapH = H - 170;
       if (map.waterZones) {
         for (const z of map.waterZones) {
+          const c = normToWorld(z.x, z.y);
+          const rx = (z.rx || 0.1) * mapUsableW();
+          const ry = (z.ry || 0.1) * mapPlayH();
           ctx.save();
           ctx.globalAlpha = 0.22;
           ctx.fillStyle = '#29b6f6';
           ctx.beginPath();
-          ctx.ellipse(z.x * W, mapTop + z.y * mapH, (z.rx || 0.1) * W, (z.ry || 0.1) * mapH, 0, 0, Math.PI * 2);
+          ctx.ellipse(c.x, c.y, rx, ry, 0, 0, Math.PI * 2);
           ctx.fill();
           ctx.restore();
         }
       }
     }
-    const valid = canPlace(mouse.x, mouse.y, placingTower) && mouse.y < H - 130;
+    const valid = canPlace(mouse.x, mouse.y, placingTower);
     ctx.globalAlpha = 0.75;
     drawTower({ type: placingTower, x: mouse.x, y: mouse.y, range: def.range, angle: 0, aimAngle: 0, paths: [0,0,0], shootKick: 0, shootFlash: 0, spriteSize: def.spriteSize }, true);
     ctx.globalAlpha = 1;
@@ -3008,7 +3398,7 @@ function renderBtdUpgradePanel(force) {
     (t.income ? ' · $' + t.income + '/rd' : '') +
     ' · ' + (t.targeting || 'first').toUpperCase();
   btdEl('btdUpgTarget').textContent = 'TARGET: ' + (t.targeting || 'first').toUpperCase();
-  btdEl('btdUpgSell').textContent = 'SELL $' + Math.floor(t.totalCost * 0.7);
+  btdEl('btdUpgSell').textContent = 'SELL $' + Math.floor(t.totalCost * sellRefundMul());
 
   const pathsEl = btdEl('btdUpgPaths');
   pathsEl.innerHTML = '';
@@ -3065,7 +3455,7 @@ function initBtdUi() {
   const ms = btdEl('btdMapSelect');
   if (ms) ms.style.backgroundImage = 'url(' + BTD_BASE + 'home-screen-bg.png)';
 
-  // Event delegation — survives card rebuilds
+  // Event delegation — survives card rebuilds. Map pick → difficulty select (not instant start).
   const track = btdEl('btdMapTrack');
   if (track && !track._btdBound) {
     track._btdBound = true;
@@ -3077,43 +3467,53 @@ function initBtdUi() {
       }
       e.preventDefault();
       e.stopPropagation();
+      if (mapStartPending || gameState === State.GAMEPLAY) return;
       const idx = parseInt(card.getAttribute('data-map'), 10);
       if (isNaN(idx) || idx < 0 || idx >= MAPS.length) return;
       selectedMap = idx;
       sfx('click');
       card.style.transform = 'scale(0.94)';
-      // Start game on next tick so UI can paint feedback
+      mapStartPending = true;
       setTimeout(() => {
-        try {
-          startGame();
-        } catch (err) {
-          console.error('startGame failed', err);
-          alert('Could not start map: ' + (err && err.message ? err.message : err));
-        }
-        btdMapsBuilt = false;
-        btdLastState = null;
+        mapStartPending = false;
+        gameState = State.DIFFICULTY_SELECT;
+        renderBtdDiffSelect();
         syncBtdUi();
       }, 80);
     });
   }
 
-  btdEl('btdMapBack').onclick = () => { gameState = State.MAIN_MENU; sfx('click'); syncBtdUi(); };
+  btdEl('btdMapBack').onclick = () => { gameState = State.MAIN_MENU; mapStartPending = false; sfx('click'); syncBtdUi(); };
   btdEl('btdMapPrev').onclick = () => { btdMapPage = Math.max(0, btdMapPage - 1); renderBtdMaps(); sfx('click'); };
   btdEl('btdMapNext').onclick = () => {
-    const list = mapsForTab(selectedDiff);
+    const list = mapsForTab(selectedMapTier);
     const pages = Math.max(1, Math.ceil(Math.max(list.length, 1) / MAPS_PER_PAGE));
     btdMapPage = Math.min(pages - 1, btdMapPage + 1); renderBtdMaps(); sfx('click');
   };
+  // Map pack tabs (Beginner…Expert) — NOT game difficulty
   btdEl('btdDiffBar').querySelectorAll('.btd-diff').forEach(btn => {
     btn.onclick = () => {
-      selectedDiff = parseInt(btn.dataset.diff, 10);
+      selectedMapTier = parseInt(btn.dataset.diff, 10);
       btdMapPage = 0;
       btdEl('btdDiffBar').querySelectorAll('.btd-diff').forEach(b => b.classList.toggle('active', b === btn));
       renderBtdMaps();
       sfx('click');
     };
   });
-  btdEl('btdHeroBtn').onclick = () => sfx('click');
+  const diffBack = btdEl('btdDiffBack');
+  if (diffBack) {
+    diffBack.onclick = () => {
+      gameState = State.MAP_SELECT;
+      mapStartPending = false;
+      btdMapsBuilt = false;
+      sfx('click');
+      syncBtdUi();
+    };
+  }
+  btdEl('btdHeroBtn').onclick = () => {
+    btdEl('btdSelName') && (btdEl('btdSelName').textContent = 'HEROES COMING SOON');
+    sfx('click');
+  };
   btdEl('btdUpgradesBtn').onclick = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -3142,15 +3542,7 @@ function initBtdUi() {
   btdEl('btdUpgSell').onclick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!selectedTower) return;
-    const val = Math.floor(selectedTower.totalCost * 0.7);
-    cash += val;
-    const idx = towers.indexOf(selectedTower);
-    if (idx >= 0) towers.splice(idx, 1);
-    spawnFloat(selectedTower.x, selectedTower.y, '+$' + val, '#4caf50');
-    selectedTower = null;
-    hideBtdUpgradePanel();
-    sfx('sell');
+    sellSelectedTower();
   };
   // Event delegation for upgrade path buttons (survives partial rebuilds)
   const pathsHost = btdEl('btdUpgPaths');
@@ -3191,23 +3583,91 @@ function initBtdUi() {
     if (!roundActive && bloons.filter(b => b.alive).length === 0) startRound();
     sfx('click');
   };
+  btdEl('btdAbilityBtn').title = 'Start next round (Space)';
+  btdEl('btdAbilityBtn').textContent = 'GO';
   renderBtdMaps();
   renderBtdTowerGrid();
 }
 
+const _mapThumbCache = {};
+function buildMapThumbDataUrl(mapIdx) {
+  if (_mapThumbCache[mapIdx]) return _mapThumbCache[mapIdx];
+  const map = MAPS[mapIdx];
+  if (!map) return '';
+  const tw = 320, th = 180;
+  const c = document.createElement('canvas');
+  c.width = tw; c.height = th;
+  const g = c.getContext('2d');
+  g.fillStyle = terrainFillColor(map.terrain);
+  g.fillRect(0, 0, tw, th);
+  // lightweight terrain tint
+  if (map.terrain === 'candy') {
+    const grd = g.createLinearGradient(0, 0, tw, th);
+    grd.addColorStop(0, 'rgba(255,120,180,0.35)');
+    grd.addColorStop(1, 'rgba(100,200,255,0.2)');
+    g.fillStyle = grd; g.fillRect(0, 0, tw, th);
+  } else if (map.terrain === 'lava') {
+    g.fillStyle = 'rgba(255,70,20,0.15)'; g.fillRect(0, 0, tw, th);
+    for (let i = 0; i < 8; i++) {
+      g.strokeStyle = 'rgba(255,90,30,0.4)'; g.lineWidth = 2;
+      g.beginPath(); g.moveTo(i * 40, 20 + (i % 3) * 40); g.lineTo(i * 40 + 50, 60 + (i % 2) * 50); g.stroke();
+    }
+  } else if (map.terrain === 'snow') {
+    g.fillStyle = 'rgba(255,255,255,0.25)'; g.fillRect(0, 0, tw, th);
+  } else if (map.terrain === 'sand') {
+    g.fillStyle = 'rgba(255,220,140,0.2)'; g.fillRect(0, 0, tw, th);
+  } else if (map.terrain === 'dark') {
+    g.fillStyle = 'rgba(20,20,60,0.25)'; g.fillRect(0, 0, tw, th);
+  }
+  const toT = (p) => ({ x: 10 + p.x * (tw - 20), y: 10 + p.y * (th - 20) });
+  const drawPath = (raw) => {
+    if (!raw || !raw.length) return;
+    const pts = raw.map(toT);
+    const pc = pathColors(map);
+    g.lineCap = 'round'; g.lineJoin = 'round';
+    g.strokeStyle = pc.edge; g.lineWidth = 14;
+    g.beginPath(); g.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x, pts[i].y);
+    g.stroke();
+    g.strokeStyle = pc.fill; g.lineWidth = 9;
+    g.beginPath(); g.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x, pts[i].y);
+    g.stroke();
+  };
+  drawPath(map.path);
+  if (map.path2) drawPath(map.path2);
+  if (map.waterZones) {
+    for (const z of map.waterZones) {
+      const cx = 10 + z.x * (tw - 20), cy = 10 + z.y * (th - 20);
+      const rx = (z.rx || 0.1) * (tw - 20), ry = (z.ry || 0.1) * (th - 20);
+      g.fillStyle = map.terrain === 'snow' ? '#90caf9' : '#29b6f6';
+      g.beginPath(); g.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); g.fill();
+    }
+  }
+  // decorations as tiny dots
+  for (const d of (map.decorations || [])) {
+    if (d.type === 'lake') continue;
+    const x = 10 + d.x * (tw - 20), y = 10 + d.y * (th - 20);
+    g.fillStyle = d.type === 'candy' || d.type === 'lollipop' ? '#ef5350'
+      : d.type === 'ember' ? '#ff7043'
+      : d.type === 'cactus' ? '#66bb6a'
+      : d.type === 'rock' || d.type === 'crack' ? '#78909c'
+      : '#2e7d32';
+    g.beginPath(); g.arc(x, y, d.type === 'tree' ? 5 : 3, 0, Math.PI * 2); g.fill();
+  }
+  _mapThumbCache[mapIdx] = c.toDataURL('image/png');
+  return _mapThumbCache[mapIdx];
+}
+
 function mapThumbFor(i) {
-  // Shared preview art; CSS filters approximate terrain of beginner maps
+  try {
+    const url = buildMapThumbDataUrl(i);
+    if (url) return url;
+  } catch (e) { /* fall through */ }
   return BTD_BASE + 'sunny-grove-map.png';
 }
 function mapFilterFor(i) {
-  const map = MAPS[i];
-  if (!map) return 'none';
-  if (map.terrain === 'sand') return 'hue-rotate(-25deg) saturate(1.35) brightness(1.1)';
-  if (map.terrain === 'candy') return 'hue-rotate(300deg) saturate(1.5) brightness(1.05)';
-  if (map.terrain === 'snow') return 'hue-rotate(180deg) brightness(1.2) saturate(0.7)';
-  if (map.terrain === 'dark') return 'hue-rotate(220deg) brightness(0.65) saturate(0.9)';
-  if (map.terrain === 'lava') return 'hue-rotate(-15deg) saturate(1.5) brightness(0.8)';
-  if (map.name === 'Logs') return 'hue-rotate(25deg) saturate(0.95) brightness(0.95)';
+  // Thumbs are now unique per map — no CSS filter needed
   return 'none';
 }
 
@@ -3217,8 +3677,8 @@ function renderBtdMaps() {
   if (!track) return;
   for (let i = 0; i < MAPS.length; i++) unlockedMaps[i] = true;
 
-  // Filter maps by difficulty tab (Beginner / Intermediate / Advanced / Expert)
-  const list = mapsForTab(selectedDiff);
+  // Filter maps by map-pack tier tab (Beginner / Intermediate / Advanced / Expert)
+  const list = mapsForTab(selectedMapTier);
   const pages = Math.max(1, Math.ceil(Math.max(list.length, 1) / MAPS_PER_PAGE));
   btdMapPage = clamp(btdMapPage, 0, pages - 1);
   track.innerHTML = '';
@@ -3233,14 +3693,15 @@ function renderBtdMaps() {
     page.innerHTML =
       '<div style="text-align:center;padding:40px;color:#fff;font-family:\'Luckiest Guy\',cursive;text-shadow:0 2px 4px #000">' +
       '<div style="font-size:28px;margin-bottom:12px">COMING SOON</div>' +
-      '<div style="font-size:16px;opacity:.85">More maps for this difficulty soon!</div></div>';
+      '<div style="font-size:16px;opacity:.85">More maps for this tier soon!</div>' +
+      '<div style="font-size:13px;opacity:.7;margin-top:10px">Tip: play Beginner/Intermediate maps on any game difficulty.</div></div>';
     track.appendChild(page);
     const dot = document.createElement('div');
     dot.className = 'btd-dot on';
     dots.appendChild(dot);
     track.style.transform = 'translateX(0)';
     btdEl('btdDiffBar').querySelectorAll('.btd-diff').forEach(b => {
-      b.classList.toggle('active', parseInt(b.dataset.diff, 10) === selectedDiff);
+      b.classList.toggle('active', parseInt(b.dataset.diff, 10) === selectedMapTier);
     });
     return;
   }
@@ -3262,12 +3723,16 @@ function renderBtdMaps() {
       card.setAttribute('data-map', String(i));
       card.setAttribute('role', 'button');
       card.tabIndex = 0;
-      const diffLabel = ['', 'Beginner', 'Intermediate', 'Advanced', 'Expert'][map.difficulty] || '';
+      const tierLabel = ['', 'Beginner', 'Intermediate', 'Advanced', 'Expert'][map.difficulty] || '';
       card.innerHTML =
         '<div class="btd-map-title">' + map.name + '</div>' +
         '<img class="btd-map-thumb" alt="" draggable="false" src="' + mapThumbFor(i) + '" style="filter:' + mapFilterFor(i) + '">' +
         '<div class="btd-map-stars">' + '★'.repeat(map.difficulty) + '☆'.repeat(4 - map.difficulty) +
-        ' · ' + diffLabel + ' · CLICK TO PLAY</div>';
+        ' · ' + tierLabel + ' · PICK MAP</div>';
+      // Keyboard activate
+      card.onkeydown = (ev) => {
+        if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); card.click(); }
+      };
       page.appendChild(card);
     }
     track.appendChild(page);
@@ -3277,7 +3742,49 @@ function renderBtdMaps() {
   }
   track.style.transform = 'translateX(-' + (btdMapPage * 100) + '%)';
   btdEl('btdDiffBar').querySelectorAll('.btd-diff').forEach(b => {
-    b.classList.toggle('active', parseInt(b.dataset.diff, 10) === selectedDiff);
+    b.classList.toggle('active', parseInt(b.dataset.diff, 10) === selectedMapTier);
+  });
+}
+
+function renderBtdDiffSelect() {
+  const host = btdEl('btdDiffCards');
+  const title = btdEl('btdDiffMapName');
+  if (!host) return;
+  const map = MAPS[selectedMap];
+  if (title) title.textContent = (map ? map.name : 'Map') + ' — Difficulty';
+  host.innerHTML = '';
+  const keys = ['easy', 'medium', 'hard', 'expert'];
+  DIFFS.forEach((d, i) => {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'btd-diff-card ' + keys[i];
+    card.innerHTML =
+      '<div class="ico">' + d.icon + '</div>' +
+      '<div class="nm">' + d.name + '</div>' +
+      '<div class="meta">' + d.lives + ' lives · $' + d.cash + '<br>' +
+      d.label + ' · Cash ×' + d.cashMul +
+      (d.hpMul > 1 ? '<br>Boss HP ×' + d.hpMul : '') +
+      '<br>Sell ' + Math.round((d.sellMul || 0.7) * 100) + '%</div>';
+    card.onclick = () => {
+      if (mapStartPending || gameState === State.GAMEPLAY) return;
+      selectedDiff = i;
+      mapStartPending = true;
+      sfx('click');
+      setTimeout(() => {
+        try {
+          startGame();
+        } catch (err) {
+          console.error('startGame failed', err);
+          alert('Could not start map: ' + (err && err.message ? err.message : err));
+          gameState = State.MAP_SELECT;
+        }
+        mapStartPending = false;
+        btdMapsBuilt = false;
+        btdLastState = null;
+        syncBtdUi();
+      }, 60);
+    };
+    host.appendChild(card);
   });
 }
 
@@ -3333,7 +3840,7 @@ function renderBtdTowerGrid() {
           rp.style.top = sy + 'px';
           mouse.x = g.x; mouse.y = g.y;
           updateSidebarDock();
-          const ok = canPlace(g.x, g.y, type) && g.y < H - 40;
+          const ok = canPlace(g.x, g.y, type);
           rp.style.borderColor = ok ? 'rgba(76,175,80,.7)' : 'rgba(244,67,54,.7)';
           rp.style.background = ok ? 'rgba(76,175,80,.12)' : 'rgba(244,67,54,.12)';
         };
@@ -3347,7 +3854,7 @@ function renderBtdTowerGrid() {
           const g = clientToGame(cx, cy);
           mouse.x = g.x; mouse.y = g.y;
           updateSidebarDock();
-          if (placingTower === type && canPlace(g.x, g.y, type) && g.y > 55 && g.y < H - 20) {
+          if (placingTower === type && canPlace(g.x, g.y, type)) {
             if (cash >= def.cost) {
               cash -= def.cost; totalSpent += def.cost;
               towers.push(createTower(type, g.x, g.y));
@@ -3412,9 +3919,11 @@ let btdMapsBuilt = false;
 function syncBtdUi() {
   initBtdUi();
   const mapEl = btdEl('btdMapSelect');
+  const diffEl = btdEl('btdDiffSelect');
   const sideEl = btdEl('btdSidebar');
   if (!mapEl || !sideEl) return;
-  const showMap = gameState === State.MAP_SELECT || gameState === State.DIFFICULTY_SELECT;
+  const showMap = gameState === State.MAP_SELECT;
+  const showDiff = gameState === State.DIFFICULTY_SELECT;
   const showSide = gameState === State.GAMEPLAY || gameState === State.PAUSE;
 
   // Explicit show/hide (class + style) so menu cannot soft-lock as invisible
@@ -3425,6 +3934,17 @@ function syncBtdUi() {
   } else {
     mapEl.classList.add('hidden');
     mapEl.style.display = 'none';
+  }
+  if (diffEl) {
+    if (showDiff) {
+      diffEl.classList.remove('hidden');
+      diffEl.style.display = 'flex';
+      diffEl.style.pointerEvents = 'auto';
+      renderBtdDiffSelect();
+    } else {
+      diffEl.classList.add('hidden');
+      diffEl.style.display = 'none';
+    }
   }
   if (showSide) {
     sideEl.classList.remove('hidden');
@@ -3443,7 +3963,7 @@ function syncBtdUi() {
   }
 
   // Rebuild map cards only when entering map select
-  if (showMap && (btdLastState !== State.MAP_SELECT && btdLastState !== State.DIFFICULTY_SELECT || !btdMapsBuilt)) {
+  if (showMap && (btdLastState !== State.MAP_SELECT || !btdMapsBuilt)) {
     renderBtdMaps();
     btdMapsBuilt = true;
   }
@@ -3521,6 +4041,22 @@ loadAssets().then(() => {
   gameState = State.MAIN_MENU;
   initBtdUi();
   syncBtdUi();
+  try {
+    const q = new URLSearchParams(location.search);
+    if (q.get('autostart') === '1') {
+      const mi = parseInt(q.get('map') || '0', 10);
+      const di = parseInt(q.get('diff') || '0', 10);
+      if (!isNaN(mi) && mi >= 0 && mi < MAPS.length) selectedMap = mi;
+      if (!isNaN(di) && di >= 0 && di < DIFFS.length) selectedDiff = di;
+      startGame();
+    } else if (q.get('maps') === '1') {
+      const di = parseInt(q.get('diff') || '0', 10);
+      if (!isNaN(di) && di >= 0) selectedDiff = di;
+      gameState = State.MAP_SELECT;
+      btdMapsBuilt = false;
+      syncBtdUi();
+    }
+  } catch (e) {}
 }).catch(err => {
   loadError = String(err);
   gameState = State.MAIN_MENU;

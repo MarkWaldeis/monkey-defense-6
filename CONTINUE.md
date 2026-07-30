@@ -2,7 +2,7 @@
 
 ## Play links
 - **Live:** https://markwaldeis.github.io/monkey-defense-6/ (hard-refresh Strg+F5)
-- **Local:** `cd "C:\Users\Mark Waldeis\Desktop\Game Prompt"` → `python -m http.server 8766` → http://127.0.0.1:8766/monkey-defense-6.html
+- **Local:** `cd "C:\Users\Mark Waldeis\Desktop\Game Prompt"` → `python -m http.server 8766 --bind 127.0.0.1` → http://127.0.0.1:8766/monkey-defense-6.html
 - **Repo:** https://github.com/MarkWaldeis/monkey-defense-6
 
 ## Core files
@@ -13,52 +13,49 @@
 
 ## Architecture
 - **Canvas game** 1280×720 logical, scaled to window
-- **State machine:** LOADING → MAIN_MENU → MAP_SELECT → GAMEPLAY (PAUSE / GAME_OVER / VICTORY)
-- **BTD DOM UI** (`#btdMapSelect`, `#btdSidebar`): map carousel + wood tower sidebar
-- Map click uses **event delegation** on `#btdMapTrack` (`data-map` index) → `startGame()`
+- **State machine:** LOADING → MAIN_MENU → MAP_SELECT → **DIFFICULTY_SELECT** → GAMEPLAY (PAUSE / GAME_OVER / VICTORY)
+- **Map pack vs game difficulty are separate:**
+  - `selectedMapTier` — Beginner/Intermediate/Advanced/Expert **tabs** (filter maps)
+  - `selectedDiff` — Easy/Medium/Hard/Expert **modes** (lives, cash, rounds, hpMul, sellMul)
+- Map click → difficulty panel → `startGame()`
+- **BTD DOM UI** (`#btdMapSelect`, `#btdDiffSelect`, `#btdSidebar`): map carousel + difficulty cards + wood tower sidebar
 - All maps unlocked for playability
-- **Top-down 3D towers (BTD6-style):**
-  - Fixed **pad** at `(x,y)` (never rotates)
-  - **Body** sprite faces UP; rotates with `aim + π/2` around same point
-  - Shoot: `attack_0/1` frames + body recoil + muzzle flash (pad stays put)
-  - Bomb/tack: Kenney top-down turrets; monkeys: original top-down art
+- **Top-down 3D towers (BTD6-style):** fixed pad + rotating body + attack frames
 - Paths end at **BASE fort**; leaks cost RBE lives with LEAK feedback
-- Camo/Lead warnings one round ahead
+- Camo/Lead/MOAB warnings one round ahead
 
 ## Towers (order)
-dart, boomer, tack, sniper, ninja, **water**, glue, bomb, ice, wizard, farm, super  
-- **Water Monkey** (Buccaneer-style): water shots, pierce, late AoE  
-- **Glue Gunner**: slows bloons  
-- **Boomerang**: high pierce  
-- **Ninja**: camo from start  
+dart, boomer, tack, sniper, ninja, **water**, **sub**, glue, bomb, ice, wizard, farm, super
+
 ## Modes
-Easy R40 · Medium R60 · Hard R100 · Expert R100 (harder stats)  
-Difficulty tabs on map select stay (BTD-style). Current maps are **Beginner/Easy** pack only.  
+Easy R40 · Medium R60 · Hard R100 · Expert R100 (hpMul 1.35, fewer lives, lower sell %)
+
 ## Maps
-**Beginner tab:** Monkey Meadow · In the Loop · Logs · Candy Falls · Alpine Lake · Spa Pits  
-**Intermediate tab:** Cracked Quarry · Twin Lanes (multi-path)  
+**Beginner:** Monkey Meadow · In the Loop · Logs · Candy Falls · Alpine Lake · Spa Pits  
+**Intermediate:** Cracked Quarry · Twin Lanes (multi-path)  
 **Advanced / Expert tabs:** Coming soon placeholder  
-## Enemies
-MOAB → BFB → ZOMG → DDT (camo+lead) → BAD; high HP BTD6-style bosses
 
-## Known UX
-- Difficulty tabs set `selectedDiff` before map click
-- **Large tower sidebar** (~220px): **fixed right** unless actively placing a tower; only while `placingTower` is set, auto-flips opposite the cursor (hysteresis 42%/58%) so the free side is placeable; cancels → snaps back right
-- `canPlace` / drag-drop use `overSidebar()` + `sidebarGameW()` (scale-aware)
-- Upgrade panel (`towerPanelX()`) sits next to the free edge of the docked sidebar
-- Sidebar drag-or-click to place
+## Combat fixes (2026-07 polish pass)
+- `canPopPurple` honored for magic/laser/plasma (Archmage / Super can pop purple when flagged)
+- Pierce **not** consumed on blocked hits (lead/camo/immune)
+- Bomb Blitz uses `projType: 'blitz'` so black bloons are wiped too
+- Sniper pierce = bounce chain to other targets
+- Freeze draw no longer uses expensive `ctx.filter`
+- Auto-start between-round timer scales with game speed
 
-## Recent fixes
-- Map select soft-lock: cards rebuilt every frame → fixed; now rebuild only on enter
-- Map click: delegated handler + all maps unlocked
-- Explicit `display`/`pointer-events` on map UI show/hide
-- Bigger tower menu + auto left/right dock opposite cursor
-- Sidebar full viewport height; HUD pause/speed/GO shifted left of dock
-- Ninja Monkey (camo detect) + shuriken assets
-- Full top-down tower rebuild (pads + rotating bodies + attack frames for all 9)
+## Balance (same pass)
+- Farm / boat trade / sniper supply / necro income nerfed
+- Ice: cost 375, slower freeze, pierce 25 base
+- Super: cost 3200, fireRate 0.15
+- Expert: 50 lives, $400, cashMul 0.65, hpMul 1.35, sell 60%
+- Ceramic cash 12; DDT slightly slower; late-game pop cash taper after R50
 
-## Next ideas (if continuing)
-- Real map thumbnails per map
-- Hero picker, locked tower progression, more BTD polish
-- Favicon, better audio files
-- Balance / more maps
+## Controls extras
+- Shift+1–9 place · T targeting · Backspace sell · Space GO · 1–3 speed
+
+## Next ideas
+- Real Advanced/Expert maps (obstacles + shorter paths)
+- Hero system, tower unlock progression
+- Real ability CDs (Blitz / Sabotage / Absolute Zero) on ability button
+- Module split of the monolith HTML
+- Better audio samples

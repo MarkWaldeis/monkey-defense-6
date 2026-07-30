@@ -1,53 +1,56 @@
 # Monkey Defense 6
 
-Bloons TD–inspired tower defense game for the browser.  
-**Pro Asset Edition** — HTML5 Canvas + Kenney CC0 tiles + custom bloon sprites.
+Bloons TD–inspired tower defense for the browser.  
+**Pro Asset Edition** — HTML5 Canvas + Kenney CC0 tiles + custom bloon sprites + BTD-style DOM UI.
 
-Play online (after GitHub Pages is enabled):
+## Play
 
-```text
-https://<your-user>.github.io/<repo-name>/
-```
-
-Or open locally:
+- **Live:** https://markwaldeis.github.io/monkey-defense-6/ (hard-refresh Ctrl+F5 after updates)
+- **Local:**
 
 ```bash
-# from this folder
-python -m http.server 8766
-# then visit http://127.0.0.1:8766/
+cd "Desktop/Game Prompt"
+python -m http.server 8766 --bind 127.0.0.1
+# open http://127.0.0.1:8766/monkey-defense-6.html
 ```
 
-No build step required. Main file: `monkey-defense-6.html`.
+No build step. Main file: `monkey-defense-6.html`.
 
 ---
 
 ## Features
 
-- 5 maps (Meadow, Tree Stump, Frozen Lake, Lava Fields, Dark Castle)
-- 8 towers with 3 upgrade tiers each
-- 15 bloon types including MOAB / BFB / ZOMG
-- 60 rounds, 4 difficulties
-- Sprite assets, particle FX, Web Audio SFX
-- Speed controls (1x–3x), auto-start, sell / targeting
+- **8 maps** — Beginner (6) + Intermediate (2); Advanced/Expert packs coming soon
+- **13 towers** with BTD6-style **3×5 upgrade paths** and crosspath rules
+- Full bloon hierarchy including **MOAB / BFB / ZOMG / DDT / BAD**
+- Difficulties: **Easy (R40) · Medium (R60) · Hard (R100) · Expert (R100 + boss HP)**
+- **Map pack tabs independent of game difficulty** — play Meadow on Expert
+- Targeting (First / Last / Strong / Close), sell refund, auto-start, 1–3× speed
+- Camo / lead / MOAB threat banners one round ahead
+- Water-only Boat & Sub placement
 
 ## Controls
 
 | Input | Action |
 |-------|--------|
-| Click tower icon | Select to place |
-| Click map | Place tower |
-| Click placed tower | Upgrade / sell / targeting |
+| Click / drag tower icon | Place tower |
+| Click placed tower | Upgrades / sell / targeting |
 | **▶ GO** or **Space** | Start next round |
 | **1** / **2** / **3** | Game speed |
-| **Esc** | Pause |
+| **Shift+1…9** | Select tower type to place |
+| **T** | Cycle targeting (selected tower) |
+| **Backspace / Delete** | Sell selected tower |
+| **Esc** | Cancel place · deselect · pause |
+| Right-click / long-press | Cancel placement |
 
 ## Project layout
 
 ```text
-monkey-defense-6.html   # full game (single HTML file)
-index.html              # redirects to the game (GitHub Pages entry)
-public/assets/          # sprites, tiles, UI, Kenney pack
-CREDITS.md              # licenses & sources
+monkey-defense-6.html   # full game (canvas + BTD DOM UI)
+index.html              # redirects to the game
+public/assets/          # towers, bloons, tiles, UI, Kenney pack
+CREDITS.md              # licenses
+CONTINUE.md             # handoff notes
 ```
 
 ## License
