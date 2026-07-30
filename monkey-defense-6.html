@@ -4,14 +4,222 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Monkey Defense 6</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden;background:#0a0a14;font-family:Segoe UI,Arial,sans-serif}
-canvas{display:block;margin:0 auto;cursor:default;background:#0a0a14}
+html,body{width:100%;height:100%;overflow:hidden;background:#0a0a14;font-family:'Nunito',Segoe UI,Arial,sans-serif}
+canvas{display:block;margin:0 auto;cursor:default;background:#0a0a14;position:relative;z-index:1}
+#uiRoot{position:fixed;inset:0;pointer-events:none;z-index:10}
+#uiRoot>*{pointer-events:auto}
+.hidden{display:none!important}
+
+/* ─── BTD MAP SELECT ─── */
+#btdMapSelect{
+  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:#1a3d15 center/cover no-repeat;
+  overflow:hidden;
+}
+#btdMapSelect::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at center,rgba(0,0,0,.15),rgba(0,0,0,.55));
+  pointer-events:none;
+}
+.btd-back{
+  position:absolute;top:18px;left:18px;z-index:2;
+  width:54px;height:54px;border-radius:50%;border:3px solid #fff;
+  background:linear-gradient(180deg,#5bb8ff,#2a7fd4);color:#fff;font-size:28px;font-weight:900;
+  cursor:pointer;box-shadow:0 4px 0 #1a5a9a,0 6px 12px rgba(0,0,0,.35);
+  transition:transform .15s ease-out;
+}
+.btd-back:hover{transform:scale(1.08)}
+.btd-back:active{transform:scale(.95)}
+.btd-map-stage{position:relative;z-index:1;width:min(1100px,92vw);display:flex;align-items:center;gap:12px}
+.btd-arrow{
+  flex:0 0 48px;height:64px;border:none;border-radius:12px;cursor:pointer;
+  background:linear-gradient(180deg,#ffb347,#e8912d);color:#fff;font-size:28px;font-weight:900;
+  box-shadow:0 4px 0 #b86b12;transition:transform .15s ease-out;
+}
+.btd-arrow:hover{transform:scale(1.1)}
+.btd-arrow:active{transform:scale(.92)}
+.btd-map-viewport{flex:1;overflow:hidden;position:relative;min-height:360px}
+.btd-map-track{
+  display:flex;transition:transform .32s cubic-bezier(.2,.8,.2,1);will-change:transform;
+}
+.btd-map-page{
+  min-width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:18px 22px;padding:8px 12px;
+}
+.btd-map-card{
+  background:linear-gradient(180deg,#e8dcc8,#d4c5a9 40%,#c4b08a);
+  border-radius:18px;padding:10px 10px 14px;cursor:pointer;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.55),inset 0 -3px 0 rgba(0,0,0,.12),0 8px 18px rgba(0,0,0,.35);
+  border:2px solid #a89068;transition:transform .2s ease-out,box-shadow .2s ease-out;
+  animation:cardIn .35s ease-out both;
+}
+.btd-map-card:nth-child(1){animation-delay:.05s}
+.btd-map-card:nth-child(2){animation-delay:.1s}
+.btd-map-card:nth-child(3){animation-delay:.15s}
+.btd-map-card:nth-child(4){animation-delay:.2s}
+.btd-map-card:nth-child(5){animation-delay:.25s}
+.btd-map-card:nth-child(6){animation-delay:.3s}
+@keyframes cardIn{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+.btd-map-card:hover{transform:scale(1.05);box-shadow:0 0 0 3px #f5c542,0 10px 24px rgba(0,0,0,.4)}
+.btd-map-card:active{transform:scale(.96)}
+.btd-map-card.locked{filter:grayscale(.5) brightness(.75);cursor:not-allowed}
+.btd-map-card.locked:hover{transform:none;box-shadow:inset 0 2px 0 rgba(255,255,255,.55),0 8px 18px rgba(0,0,0,.35)}
+.btd-map-title{
+  font-family:'Luckiest Guy',cursive;font-size:clamp(14px,1.6vw,20px);color:#1a1a1a;
+  text-align:center;margin-bottom:6px;
+  text-shadow:1px 0 #fff,-1px 0 #fff,0 1px #fff,0 -1px #fff,0 2px 2px rgba(0,0,0,.25);
+  letter-spacing:.5px;text-transform:uppercase;
+}
+.btd-map-thumb{
+  width:100%;aspect-ratio:16/10;border-radius:10px;object-fit:cover;display:block;
+  border:2px solid #8a7348;background:#3d6b2e;
+}
+.btd-map-stars{text-align:center;margin-top:6px;color:#f5c542;font-size:14px;text-shadow:0 1px 2px #000}
+.btd-dots{display:flex;gap:8px;justify-content:center;margin-top:14px;z-index:1;position:relative}
+.btd-dot{width:10px;height:10px;border-radius:50%;background:#5a6a5a;box-shadow:inset 0 1px 2px rgba(0,0,0,.4)}
+.btd-dot.on{background:#fff;box-shadow:0 0 8px #fff}
+.btd-diff-bar{
+  position:absolute;bottom:18px;left:50%;transform:translateX(-50%);
+  display:flex;gap:28px;align-items:flex-end;z-index:2;
+}
+.btd-diff{
+  display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;
+  transition:transform .2s ease-out;border:none;background:transparent;color:#fff;
+  font-family:'Nunito',sans-serif;font-weight:900;font-size:12px;letter-spacing:1px;
+  text-shadow:0 2px 3px rgba(0,0,0,.7);
+}
+.btd-diff:hover{transform:scale(1.08)}
+.btd-diff .medal{
+  width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font-size:26px;
+  border:3px solid rgba(255,255,255,.5);box-shadow:0 4px 12px rgba(0,0,0,.4);
+  transition:transform .2s,box-shadow .2s;
+}
+.btd-diff.active .medal{transform:scale(1.15);box-shadow:0 0 16px currentColor,0 4px 12px rgba(0,0,0,.4)}
+.btd-diff.beginner .medal{background:radial-gradient(circle at 35% 30%,#8fd4ff,#2b7fd4);color:#8fd4ff}
+.btd-diff.intermediate .medal{background:radial-gradient(circle at 35% 30%,#ffe08a,#e8912d);color:#f5a623}
+.btd-diff.advanced .medal{background:radial-gradient(circle at 35% 30%,#ff8a80,#c62828);color:#ef5350}
+.btd-diff.expert .medal{background:radial-gradient(circle at 35% 30%,#666,#1a1a1a);color:#ff7043}
+.btd-hero{
+  position:absolute;bottom:22px;left:22px;z-index:2;
+  display:flex;align-items:center;gap:8px;padding:6px 12px 6px 6px;border-radius:999px;
+  background:rgba(0,0,0,.35);border:2px solid #4ecdc4;color:#fff;font-weight:800;font-size:12px;
+  cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.3);
+}
+.btd-hero img{width:40px;height:40px;border-radius:50%;border:2px solid #4ecdc4;background:#2d5a27;object-fit:contain}
+
+/* ─── BTD TOWER SIDEBAR ─── */
+#btdSidebar{
+  position:absolute;top:52px;right:0;bottom:0;width:108px;
+  background:linear-gradient(90deg,#6b4d12 0%,#8b6914 12%,#a0784c 50%,#8b6914 88%,#5a3d0e 100%);
+  box-shadow:-6px 0 18px rgba(0,0,0,.45),inset 2px 0 0 rgba(255,255,255,.15);
+  display:flex;flex-direction:column;padding:8px 6px 10px;z-index:5;
+  border-left:3px solid #3e2a0a;
+}
+.btd-upg-btn{
+  background:linear-gradient(180deg,#7ed957,#3faa2a 55%,#2d8a1c);
+  border:2px solid #1f6b14;border-radius:14px;color:#fff;font-family:'Luckiest Guy',cursive;
+  font-size:15px;letter-spacing:1px;padding:8px 4px;cursor:pointer;
+  text-shadow:0 2px 0 #1a5a12;box-shadow:inset 0 2px 0 rgba(255,255,255,.35),0 3px 0 #1a5a12;
+  transition:transform .15s;
+}
+.btd-upg-btn:hover{transform:scale(1.04)}
+.btd-upg-btn:active{transform:scale(.96)}
+.btd-sel-name{
+  margin:8px 2px 6px;background:linear-gradient(180deg,#fff8e7,#e8dcc8);
+  border-radius:8px;border:2px solid #c4a86a;text-align:center;
+  font-family:'Luckiest Guy',cursive;font-size:11px;color:#1a1a1a;padding:4px 2px;
+  text-shadow:0 1px 0 #fff;line-height:1.15;
+}
+.btd-tower-grid{
+  flex:1;overflow-y:auto;overflow-x:hidden;display:grid;grid-template-columns:1fr 1fr;gap:8px 6px;
+  padding:2px 2px 8px;align-content:start;
+  scrollbar-width:thin;scrollbar-color:#c4a86a transparent;
+}
+.btd-tower-cell{
+  position:relative;aspect-ratio:1;border-radius:10px;cursor:pointer;
+  background:linear-gradient(180deg,#d8d0c0,#b8b0a0);
+  border:2px solid #7a7260;box-shadow:inset 0 1px 0 rgba(255,255,255,.4);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:transform .15s ease-out,box-shadow .15s,border-color .15s;
+}
+.btd-tower-cell:hover{transform:scale(1.08);box-shadow:0 0 10px rgba(245,198,66,.5)}
+.btd-tower-cell.selected{border-color:#f5c542;box-shadow:0 0 0 2px #f5c542,0 0 12px rgba(245,198,66,.7);transform:scale(1.06)}
+.btd-tower-cell.locked{filter:brightness(.55);cursor:not-allowed}
+.btd-tower-cell.locked:hover{transform:none;box-shadow:none}
+.btd-tower-cell.cant-afford .btd-price{color:#e53935}
+.btd-tower-cell img{width:70%;height:70%;object-fit:contain;pointer-events:none}
+.btd-price{font-size:11px;font-weight:900;color:#2e7d32;text-shadow:0 1px 0 rgba(255,255,255,.5);margin-top:1px}
+.btd-lock{
+  position:absolute;bottom:4px;left:50%;transform:translateX(-50%);
+  font-size:16px;filter:drop-shadow(0 1px 1px #000);
+}
+.btd-side-actions{display:flex;gap:6px;margin-top:6px}
+.btd-side-actions button{
+  flex:1;height:42px;border-radius:12px;border:2px solid rgba(0,0,0,.2);cursor:pointer;
+  font-size:18px;font-weight:900;color:#fff;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.35),0 3px 0 rgba(0,0,0,.25);
+  transition:transform .12s;
+}
+.btd-side-actions button:hover{transform:scale(1.06)}
+.btd-side-actions button:active{transform:scale(.94)}
+.btd-btn-ability{background:linear-gradient(180deg,#7ee8ff,#29b6f6 55%,#0288d1)}
+.btd-btn-ff{background:linear-gradient(180deg,#9dff6a,#43a047 55%,#2e7d32)}
+.btd-btn-ff.active{box-shadow:0 0 0 2px #fff,0 0 12px #76ff03}
+
+/* drag ghost */
+#dragGhost{
+  position:fixed;pointer-events:none;z-index:50;opacity:.75;width:64px;height:64px;
+  display:none;transform:translate(-50%,-50%);
+}
+#dragGhost img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 4px 6px rgba(0,0,0,.45))}
+#rangePreview{
+  position:fixed;pointer-events:none;z-index:40;display:none;border:2px solid rgba(255,255,255,.45);
+  border-radius:50%;background:rgba(255,255,255,.08);transform:translate(-50%,-50%);
+}
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
+<div id="uiRoot">
+  <!-- BTD Map Select -->
+  <div id="btdMapSelect" class="hidden">
+    <button class="btd-back" id="btdMapBack" title="Back">←</button>
+    <div class="btd-map-stage">
+      <button class="btd-arrow" id="btdMapPrev">◀</button>
+      <div class="btd-map-viewport">
+        <div class="btd-map-track" id="btdMapTrack"></div>
+      </div>
+      <button class="btd-arrow" id="btdMapNext">▶</button>
+    </div>
+    <div class="btd-dots" id="btdMapDots"></div>
+    <div class="btd-diff-bar" id="btdDiffBar">
+      <button class="btd-diff beginner active" data-diff="0"><span class="medal">💧</span>BEGINNER</button>
+      <button class="btd-diff intermediate" data-diff="1"><span class="medal">🔥</span>INTERMEDIATE</button>
+      <button class="btd-diff advanced" data-diff="2"><span class="medal">🌋</span>ADVANCED</button>
+      <button class="btd-diff expert" data-diff="3"><span class="medal">💀</span>EXPERT</button>
+    </div>
+    <button class="btd-hero" id="btdHeroBtn" type="button">
+      <img id="btdHeroImg" alt="hero" src="public/assets/ui/btd/tower-dart-monkey.png">
+      <span>CHANGE HERO</span>
+    </button>
+  </div>
+
+  <!-- BTD Tower Sidebar -->
+  <div id="btdSidebar" class="hidden">
+    <button class="btd-upg-btn" id="btdUpgradesBtn">UPGRADES</button>
+    <div class="btd-sel-name" id="btdSelName">SELECT TOWER</div>
+    <div class="btd-tower-grid" id="btdTowerGrid"></div>
+    <div class="btd-side-actions">
+      <button class="btd-btn-ability" id="btdAbilityBtn" title="Ability">☁</button>
+      <button class="btd-btn-ff" id="btdFfBtn" title="Fast Forward">▶▶</button>
+    </div>
+  </div>
+</div>
+<img id="dragGhost" alt="">
+<div id="rangePreview"></div>
 <script>
 (() => {
 'use strict';
@@ -744,7 +952,8 @@ function fireTower(tower, target) {
 }
 
 function canPlace(x, y) {
-  if (y < 55 || y > H - 145 || x < 20 || x > W - 20) return false;
+  // Leave room for BTD right sidebar (~108px)
+  if (y < 55 || y > H - 30 || x < 20 || x > W - 120) return false;
   for (const p of gamePaths) if (distToPath(x, y, p) < 32) return false;
   for (const t of towers) if (dist(x, y, t.x, t.y) < 40) return false;
   const map = MAPS[selectedMap];
@@ -1185,29 +1394,12 @@ function handleClick() {
   const mx = mouse.x, my = mouse.y;
   if (gameState === State.LOADING) return;
   if (gameState === State.MAIN_MENU) {
-    if (hitBtn(W/2-120, H/2+20, 240, 60)) { gameState = State.MAP_SELECT; sfx('click'); }
+    if (hitBtn(W/2-120, H/2+20, 240, 60)) { gameState = State.MAP_SELECT; sfx('click'); syncBtdUi(); }
     if (hitBtn(W-80, 20, 50, 40)) { muted = !muted; sfx('click'); }
     return;
   }
-  if (gameState === State.MAP_SELECT) {
-    if (hitBtn(40, H-70, 120, 40)) { gameState = State.MAIN_MENU; sfx('click'); return; }
-    for (let i = 0; i < MAPS.length; i++) {
-      const col = i % 3, row = Math.floor(i / 3);
-      // Must match drawMapSelect layout
-      const x = 140 + col * 340, y = 120 + row * 250;
-      if (hitBtn(x, y, 300, 210) && unlockedMaps[i]) {
-        selectedMap = i; gameState = State.DIFFICULTY_SELECT; sfx('click');
-      }
-    }
-    return;
-  }
-  if (gameState === State.DIFFICULTY_SELECT) {
-    if (hitBtn(40, H-70, 120, 40)) { gameState = State.MAP_SELECT; sfx('click'); return; }
-    for (let i = 0; i < 4; i++) {
-      if (hitBtn(180 + i * 240, 280, 200, 160)) { selectedDiff = i; startGame(); }
-    }
-    return;
-  }
+  // Map select is BTD DOM UI
+  if (gameState === State.MAP_SELECT || gameState === State.DIFFICULTY_SELECT) return;
   if (gameState === State.PAUSE) {
     if (hitBtn(W/2-100, H/2-40, 200, 45)) { gameState = State.GAMEPLAY; sfx('click'); }
     if (hitBtn(W/2-100, H/2+20, 200, 45)) { startGame(); sfx('click'); }
@@ -1227,17 +1419,9 @@ function handleClick() {
       return;
     }
     if (hitBtn(W-340, 8, 70, 36)) { autoStart = !autoStart; sfx('click'); return; }
-    const panelY = H - 120;
-    for (let i = 0; i < TOWER_ORDER.length; i++) {
-      const tx = 20 + i * 130;
-      if (hitBtn(tx, panelY, 120, 100)) {
-        const type = TOWER_ORDER[i];
-        if (cash >= TOWER_DEFS[type].cost) { placingTower = type; selectedTower = null; sfx('click'); }
-        return;
-      }
-    }
+    // Tower pick: BTD right sidebar (DOM)
     if (selectedTower) {
-      const px = W - 260, py = 60;
+      const px = W - 380, py = 60;
       for (let u = 0; u < 3; u++) {
         if (hitBtn(px + 10, py + 160 + u * 55, 230, 50)) {
           if (selectedTower.upgradeLevel === u) applyUpgrade(selectedTower);
@@ -1261,7 +1445,9 @@ function handleClick() {
       if (hitBtn(px, py, 250, 420)) return;
     }
     if (placingTower) {
-      if (my < H - 130) {
+      // Ignore clicks on sidebar strip
+      if (mx > W - 110) return;
+      if (my > 55 && my < H - 20) {
         if (canPlace(mx, my)) {
           const cost = TOWER_DEFS[placingTower].cost;
           if (cash >= cost) {
@@ -1269,12 +1455,10 @@ function handleClick() {
             towers.push(createTower(placingTower, mx, my));
             sfx('place');
             spawnSpriteAnim('fx_magic_', 6, mx, my, 40, 16);
-            // Keep placement mode for multi-place if still affordable
             if (cash < TOWER_DEFS[placingTower].cost) placingTower = null;
+            if (typeof renderBtdTowerGrid === 'function') renderBtdTowerGrid();
           }
         }
-      } else {
-        placingTower = null;
       }
       return;
     }
@@ -1548,40 +1732,13 @@ function drawHUD() {
     }
   }
 
-  // bottom tower bar
-  const py = H - 120;
-  if (!drawImgTL('ui_tower_bar', 0, py, W, 120)) {
-    ctx.fillStyle = 'rgba(22,33,62,0.94)';
-    ctx.fillRect(0, py, W, 120);
-  }
-  for (let i = 0; i < TOWER_ORDER.length; i++) {
-    const type = TOWER_ORDER[i];
-    const def = TOWER_DEFS[type];
-    const tx = 20 + i * 130;
-    const canAfford = cash >= def.cost;
-    const selected = placingTower === type;
-    ctx.globalAlpha = canAfford ? 1 : 0.45;
-    ctx.fillStyle = selected ? 'rgba(255,215,0,0.3)' : 'rgba(0,0,0,0.25)';
-    roundRect(tx, py + 8, 120, 104, 8); ctx.fill();
-    if (selected) { ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2; ctx.stroke(); }
-    // tower sprite
-    if (!drawImg('tower_' + type, tx + 60, py + 42, 44, 44)) {
-      ctx.fillStyle = def.color;
-      ctx.beginPath(); ctx.arc(tx + 60, py + 42, 16, 0, Math.PI*2); ctx.fill();
-    }
-    ctx.fillStyle = '#fff'; ctx.font = 'bold 11px Segoe UI'; ctx.textAlign = 'center';
-    ctx.fillText(def.name.split(' ')[0], tx + 60, py + 72);
-    ctx.fillStyle = canAfford ? '#ffd700' : '#888';
-    ctx.font = 'bold 13px Segoe UI';
-    ctx.fillText('$' + def.cost, tx + 60, py + 92);
-    ctx.globalAlpha = 1;
-  }
+  // Bottom tower bar removed — BTD right sidebar (DOM) handles tower pick
 
   // tower info
   if (selectedTower) {
     const t = selectedTower;
     const def = TOWER_DEFS[t.type];
-    const px = W - 260, ipy = 60;
+    const px = W - 380, ipy = 60;
     drawPanel(px, ipy, 250, 420, 'ui_panel_tower');
     drawImg('tower_' + t.type, px + 125, ipy + 36, 48, 48);
     ctx.fillStyle = '#ffd700'; ctx.font = 'bold 15px Segoe UI'; ctx.textAlign = 'center';
@@ -1792,6 +1949,230 @@ function drawVictory() {
   drawSpriteButton(W/2-100, H/2+140, 200, 45, '🏠 Menu', 'ui_btn_grey');
 }
 
+// ─── BTD DOM UI (map select + tower sidebar) ─────────────────
+const BTD_BASE = 'public/assets/ui/btd/';
+const BTD_PORTRAITS = {
+  dart: BTD_BASE + 'tower-dart-monkey.png',
+  sniper: BTD_BASE + 'tower-sniper-monkey.png',
+  bomb: BTD_BASE + 'tower-cannon-monkey.png',
+  ice: BTD_BASE + 'tower-ice.png',
+  wizard: BTD_BASE + 'tower-wizard.png',
+  farm: BTD_BASE + 'tower-farm.png',
+  super: BTD_BASE + 'tower-super.png',
+  tack: BTD_BASE + 'tower-tack-monkey.png'
+};
+// Maps that unlock by difficulty tab (stars) — soft filter for UI flair
+let btdMapPage = 0;
+let btdUiReady = false;
+const MAPS_PER_PAGE = 6;
+
+function btdEl(id) { return document.getElementById(id); }
+
+function initBtdUi() {
+  if (btdUiReady) return;
+  btdUiReady = true;
+  // map select background
+  const ms = btdEl('btdMapSelect');
+  if (ms) ms.style.backgroundImage = 'url(' + BTD_BASE + 'home-screen-bg.png)';
+  btdEl('btdMapBack').onclick = () => { gameState = State.MAIN_MENU; sfx('click'); syncBtdUi(); };
+  btdEl('btdMapPrev').onclick = () => { btdMapPage = Math.max(0, btdMapPage - 1); renderBtdMaps(); sfx('click'); };
+  btdEl('btdMapNext').onclick = () => {
+    const pages = Math.max(1, Math.ceil(MAPS.length / MAPS_PER_PAGE));
+    btdMapPage = Math.min(pages - 1, btdMapPage + 1); renderBtdMaps(); sfx('click');
+  };
+  btdEl('btdDiffBar').querySelectorAll('.btd-diff').forEach(btn => {
+    btn.onclick = () => {
+      selectedDiff = parseInt(btn.dataset.diff, 10);
+      btdEl('btdDiffBar').querySelectorAll('.btd-diff').forEach(b => b.classList.toggle('active', b === btn));
+      sfx('click'); renderBtdMaps();
+    };
+  });
+  btdEl('btdHeroBtn').onclick = () => sfx('click');
+  btdEl('btdUpgradesBtn').onclick = () => {
+    if (selectedTower) { sfx('click'); /* panel already on canvas right */ }
+    else sfx('click');
+  };
+  btdEl('btdFfBtn').onclick = () => {
+    gameSpeed = gameSpeed >= 3 ? 1 : gameSpeed + 1;
+    btdEl('btdFfBtn').classList.toggle('active', gameSpeed > 1);
+    btdEl('btdFfBtn').textContent = gameSpeed > 1 ? (gameSpeed + 'x') : '▶▶';
+    sfx('click');
+  };
+  btdEl('btdAbilityBtn').onclick = () => {
+    if (!roundActive && bloons.filter(b => b.alive).length === 0) startRound();
+    sfx('click');
+  };
+  renderBtdMaps();
+  renderBtdTowerGrid();
+}
+
+function mapThumbFor(i) {
+  // Prefer sunny grove art; tint via CSS filter per map
+  return BTD_BASE + 'sunny-grove-map.png';
+}
+function mapFilterFor(i) {
+  const f = ['none', 'hue-rotate(40deg) saturate(1.1)', 'hue-rotate(180deg) brightness(1.15)',
+    'hue-rotate(-20deg) saturate(1.4) brightness(.85)', 'hue-rotate(260deg) brightness(.7)'];
+  return f[i % f.length];
+}
+
+function renderBtdMaps() {
+  const track = btdEl('btdMapTrack');
+  const dots = btdEl('btdMapDots');
+  if (!track) return;
+  const pages = Math.max(1, Math.ceil(MAPS.length / MAPS_PER_PAGE));
+  btdMapPage = clamp(btdMapPage, 0, pages - 1);
+  track.innerHTML = '';
+  dots.innerHTML = '';
+  for (let p = 0; p < pages; p++) {
+    const page = document.createElement('div');
+    page.className = 'btd-map-page';
+    for (let j = 0; j < MAPS_PER_PAGE; j++) {
+      const i = p * MAPS_PER_PAGE + j;
+      if (i >= MAPS.length) {
+        const empty = document.createElement('div');
+        empty.style.visibility = 'hidden';
+        page.appendChild(empty);
+        continue;
+      }
+      const map = MAPS[i];
+      const unlocked = unlockedMaps[i];
+      // Soft filter: maps with difficulty stars matching tab feel "featured"
+      const card = document.createElement('div');
+      card.className = 'btd-map-card' + (unlocked ? '' : ' locked');
+      card.innerHTML =
+        '<div class="btd-map-title">' + map.name + '</div>' +
+        '<img class="btd-map-thumb" alt="" src="' + mapThumbFor(i) + '" style="filter:' + mapFilterFor(i) + '">' +
+        '<div class="btd-map-stars">' + '★'.repeat(map.difficulty) + '☆'.repeat(4 - map.difficulty) +
+        (unlocked ? '' : ' 🔒') + '</div>';
+      if (unlocked) {
+        card.onclick = () => {
+          selectedMap = i;
+          sfx('click');
+          card.style.transform = 'scale(0.95)';
+          setTimeout(() => { startGame(); syncBtdUi(); }, 120);
+        };
+      } else {
+        card.onclick = () => sfx('click');
+      }
+      page.appendChild(card);
+    }
+    track.appendChild(page);
+    const dot = document.createElement('div');
+    dot.className = 'btd-dot' + (p === btdMapPage ? ' on' : '');
+    dots.appendChild(dot);
+  }
+  track.style.transform = 'translateX(-' + (btdMapPage * 100) + '%)';
+  // sync difficulty tabs highlight
+  btdEl('btdDiffBar').querySelectorAll('.btd-diff').forEach(b => {
+    b.classList.toggle('active', parseInt(b.dataset.diff, 10) === selectedDiff);
+  });
+}
+
+function renderBtdTowerGrid() {
+  const grid = btdEl('btdTowerGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  // Unlock progression: first 4 always, rest unlock by map difficulty / always for playability show all
+  TOWER_ORDER.forEach((type, idx) => {
+    const def = TOWER_DEFS[type];
+    const locked = false; // all playable; locks reserved for future
+    const cell = document.createElement('div');
+    cell.className = 'btd-tower-cell' + (locked ? ' locked' : '') + (placingTower === type ? ' selected' : '');
+    cell.dataset.type = type;
+    const src = BTD_PORTRAITS[type] || ('public/assets/towers/' + type + '/idle.png');
+    cell.innerHTML =
+      '<img src="' + src + '" alt="' + def.name + '">' +
+      (locked ? '<span class="btd-lock">🔒</span>' : '<span class="btd-price">$' + def.cost + '</span>');
+    if (!locked) {
+      cell.onmouseenter = () => { btdEl('btdSelName').textContent = def.name.toUpperCase(); };
+      cell.onclick = () => {
+        if (cash >= def.cost) {
+          placingTower = type;
+          selectedTower = null;
+          sfx('click');
+          renderBtdTowerGrid();
+        } else sfx('click');
+      };
+      // drag start
+      cell.onmousedown = (e) => {
+        if (e.button !== 0) return;
+        if (cash < def.cost) return;
+        placingTower = type;
+        selectedTower = null;
+        const ghost = btdEl('dragGhost');
+        ghost.src = src;
+        ghost.style.display = 'block';
+        ghost.style.left = e.clientX + 'px';
+        ghost.style.top = e.clientY + 'px';
+        const onMove = (ev) => {
+          ghost.style.left = ev.clientX + 'px';
+          ghost.style.top = ev.clientY + 'px';
+          const g = toGame(ev.clientX - canvas.getBoundingClientRect().left, ev.clientY - canvas.getBoundingClientRect().top);
+          const rp = btdEl('rangePreview');
+          const def2 = TOWER_DEFS[type];
+          const r = def2.range * scale;
+          const rect = canvas.getBoundingClientRect();
+          const sx = rect.left + ox + g.x * scale;
+          const sy = rect.top + oy + g.y * scale;
+          rp.style.display = 'block';
+          rp.style.width = (r * 2) + 'px';
+          rp.style.height = (r * 2) + 'px';
+          rp.style.left = sx + 'px';
+          rp.style.top = sy + 'px';
+          const ok = canPlace(g.x, g.y) && g.y < H - 40 && g.x < W - 110;
+          rp.style.borderColor = ok ? 'rgba(76,175,80,.7)' : 'rgba(244,67,54,.7)';
+          rp.style.background = ok ? 'rgba(76,175,80,.12)' : 'rgba(244,67,54,.12)';
+        };
+        const onUp = (ev) => {
+          window.removeEventListener('mousemove', onMove);
+          window.removeEventListener('mouseup', onUp);
+          ghost.style.display = 'none';
+          btdEl('rangePreview').style.display = 'none';
+          const rect = canvas.getBoundingClientRect();
+          const g = toGame(ev.clientX - rect.left, ev.clientY - rect.top);
+          if (placingTower === type && canPlace(g.x, g.y) && g.y > 55 && g.y < H - 20 && g.x < W - 110) {
+            if (cash >= def.cost) {
+              cash -= def.cost; totalSpent += def.cost;
+              towers.push(createTower(type, g.x, g.y));
+              sfx('place');
+              if (cash < def.cost) placingTower = null;
+            }
+          }
+          renderBtdTowerGrid();
+        };
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+        renderBtdTowerGrid();
+      };
+    }
+    if (cash < def.cost) cell.classList.add('cant-afford');
+    grid.appendChild(cell);
+  });
+  if (placingTower && TOWER_DEFS[placingTower]) {
+    btdEl('btdSelName').textContent = TOWER_DEFS[placingTower].name.toUpperCase();
+  } else if (selectedTower) {
+    btdEl('btdSelName').textContent = TOWER_DEFS[selectedTower.type].name.toUpperCase();
+  }
+}
+
+function syncBtdUi() {
+  initBtdUi();
+  const mapEl = btdEl('btdMapSelect');
+  const sideEl = btdEl('btdSidebar');
+  if (!mapEl || !sideEl) return;
+  const showMap = gameState === State.MAP_SELECT || gameState === State.DIFFICULTY_SELECT;
+  const showSide = gameState === State.GAMEPLAY;
+  mapEl.classList.toggle('hidden', !showMap);
+  sideEl.classList.toggle('hidden', !showSide);
+  if (showMap) renderBtdMaps();
+  if (showSide) {
+    renderBtdTowerGrid();
+    btdEl('btdFfBtn').classList.toggle('active', gameSpeed > 1);
+    btdEl('btdFfBtn').textContent = gameSpeed > 1 ? (gameSpeed + 'x') : '▶▶';
+  }
+}
+
 // ─── RENDER ──────────────────────────────────────────────────
 function render() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -1804,8 +2185,12 @@ function render() {
   switch (gameState) {
     case State.LOADING: drawLoading(); break;
     case State.MAIN_MENU: drawMainMenu(); break;
-    case State.MAP_SELECT: drawMapSelect(); break;
-    case State.DIFFICULTY_SELECT: drawDiffSelect(); break;
+    case State.MAP_SELECT:
+    case State.DIFFICULTY_SELECT:
+      // BTD DOM map UI handles this screen
+      ctx.fillStyle = '#1a3d15';
+      ctx.fillRect(0, 0, W, H);
+      break;
     case State.GAMEPLAY:
     case State.PAUSE:
     case State.GAME_OVER:
@@ -1826,6 +2211,7 @@ function render() {
       if (gameState === State.VICTORY) drawVictory();
       break;
   }
+  syncBtdUi();
 }
 
 function loop(now) {
@@ -1842,9 +2228,13 @@ lastTime = performance.now();
 requestAnimationFrame(loop);
 loadAssets().then(() => {
   gameState = State.MAIN_MENU;
+  initBtdUi();
+  syncBtdUi();
 }).catch(err => {
   loadError = String(err);
-  gameState = State.MAIN_MENU; // still playable with fallbacks
+  gameState = State.MAIN_MENU;
+  initBtdUi();
+  syncBtdUi();
 });
 
 })();
