@@ -610,9 +610,19 @@ function createTower(type, x, y) {
     income: def.income || 0, tackCount: def.tackCount || 8, moabMul: 1,
     fireball: false, wallOfFire: false, arctic: false, permafrost: false, sunAvatar: false,
     upgradeLevel: 0, targeting: 'first',
-    cooldown: 0, angle: -Math.PI/2, totalCost: def.cost,
-    bob: Math.random() * Math.PI * 2, wallCD: 0, spriteSize: def.spriteSize || 52
+    cooldown: 0, angle: 0, aimAngle: 0, totalCost: def.cost,
+    shootKick: 0, shootFlash: 0, wallCD: 0, spriteSize: def.spriteSize || 52
   };
+}
+function lerpAngle(a, b, t) {
+  let d = b - a;
+  while (d > Math.PI) d -= Math.PI * 2;
+  while (d < -Math.PI) d += Math.PI * 2;
+  return a + d * t;
+}
+// Towers that rotate to face bloons (not farm; tack is omnidirectional)
+function towerCanAim(type) {
+  return type !== 'farm' && type !== 'tack';
 }
 function applyUpgrade(tower) {
   const def = TOWER_DEFS[tower.type];
@@ -676,7 +686,16 @@ function makeProj(tower, x, y, vx, vy, target) {
   };
 }
 function fireTower(tower, target) {
-  tower.angle = Math.atan2(target.y - tower.y, target.x - tower.x);
+  const aim = Math.atan2(target.y - tower.y, target.x - tower.x);
+  tower.angle = aim;
+  tower.aimAngle = aim;
+  tower.shootKick = 1;
+  tower.shootFlash = 1;
+  // muzzle flash particle
+  const mx = tower.x + Math.cos(aim) * 22;
+  const my = tower.y + Math.sin(aim) * 22;
+  spawnParticles(mx, my, '#fff59d', 4, 60);
+
   if (tower.special === 'freeze' || tower.projType === 'freeze') {
     for (const b of bloons) {
       if (!b.alive) continue;
@@ -693,6 +712,7 @@ function fireTower(tower, target) {
       const a = (i / n) * Math.PI * 2;
       projectiles.push(makeProj(tower, tower.x, tower.y, Math.cos(a)*tower.projSpeed, Math.sin(a)*tower.projSpeed, null));
     }
+    tower.shootKick = 0.6;
     return;
   }
   if (tower.sunAvatar) {
@@ -1058,9 +1078,20 @@ function updateGameplay(t, diff) {
     if (fp.life <= 0) firePatches.splice(i, 1);
   }
   for (const tower of towers) {
-    tower.bob += t * 2; tower.cooldown -= t;
+    tower.cooldown -= t;
+    if (tower.shootKick > 0) tower.shootKick = Math.max(0, tower.shootKick - t * 6);
+    if (tower.shootFlash > 0) tower.shootFlash = Math.max(0, tower.shootFlash - t * 8);
     if (tower.wallCD > 0) tower.wallCD -= t;
     if (tower.special === 'income') continue;
+
+    // Smooth aim toward current target (no floating bob)
+    const aimT = getTarget(tower);
+    if (aimT && towerCanAim(tower.type)) {
+      const want = Math.atan2(aimT.y - tower.y, aimT.x - tower.x);
+      tower.aimAngle = lerpAngle(tower.aimAngle || 0, want, Math.min(1, t * 12));
+      tower.angle = tower.aimAngle;
+    }
+
     if (tower.arctic) {
       for (const b of bloons) {
         if (b.alive && dist2(tower.x, tower.y, b.x, b.y) <= tower.range * tower.range) b.freezeSlow = 0.5;
@@ -1068,11 +1099,11 @@ function updateGameplay(t, diff) {
     }
     if (tower.cooldown <= 0) {
       if (tower.projType === 'freeze') {
-        let any = false;
+        let any = null;
         for (const b of bloons) {
-          if (b.alive && dist2(tower.x, tower.y, b.x, b.y) <= tower.range * tower.range) { any = true; break; }
+          if (b.alive && dist2(tower.x, tower.y, b.x, b.y) <= tower.range * tower.range) { any = b; break; }
         }
-        if (any) { fireTower(tower, bloons[0]); tower.cooldown = tower.fireRate; }
+        if (any) { fireTower(tower, any); tower.cooldown = tower.fireRate; }
       } else {
         const target = getTarget(tower);
         if (target) { fireTower(tower, target); tower.cooldown = tower.fireRate; }
@@ -1340,9 +1371,17 @@ function drawBloon(b) {
 }
 function drawTower(t, preview) {
   const def = TOWER_DEFS[t.type];
-  const bob = preview ? 0 : Math.sin(t.bob) * 1.5;
   const size = t.spriteSize || def.spriteSize || 52;
-  // range
+  // Facing: sprite art is drawn "up"; convert aim (0 = right) → canvas rotation
+  const aim = (t.aimAngle != null ? t.aimAngle : t.angle) || 0;
+  const canAim = !preview && towerCanAim(t.type);
+  // Recoil: pull sprite back along aim when shooting
+  const kick = (!preview && t.shootKick) ? t.shootKick * 6 : 0;
+  const dx = canAim ? -Math.cos(aim) * kick : 0;
+  const dy = canAim ? -Math.sin(aim) * kick : 0;
+  const px = t.x + dx, py = t.y + dy;
+
+  // range ring
   if (selectedTower === t || preview) {
     const valid = !preview || canPlace(t.x, t.y);
     ctx.strokeStyle = preview ? (valid ? 'rgba(76,175,80,0.55)' : 'rgba(244,67,54,0.55)') : 'rgba(255,255,255,0.35)';
@@ -1350,68 +1389,68 @@ function drawTower(t, preview) {
     ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(t.x, t.y, t.range || def.range, 0, Math.PI*2); ctx.fill(); ctx.stroke();
   }
-  // shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.25)';
-  ctx.beginPath(); ctx.ellipse(t.x, t.y + size*0.35, size*0.28, size*0.12, 0, 0, Math.PI*2); ctx.fill();
+  // grounded shadow (no float)
+  ctx.fillStyle = 'rgba(0,0,0,0.28)';
+  ctx.beginPath(); ctx.ellipse(t.x, t.y + size * 0.32, size * 0.3, size * 0.12, 0, 0, Math.PI*2); ctx.fill();
 
-  // Character towers: face-camera art + light idle animation (wizard style)
+  // Sprite key
+  let key = 'tower_' + t.type;
+  let drawSize = size + 6;
   if (t.type === 'wizard' && !preview) {
-    const attacking = t.cooldown > 0 && t.cooldown > t.fireRate - 0.25;
-    let key;
+    const attacking = t.shootKick > 0.15 || (t.cooldown > 0 && t.cooldown > t.fireRate - 0.2);
     if (attacking) {
-      const af = Math.floor((1 - Math.max(0, t.cooldown - (t.fireRate - 0.25)) / 0.25) * 3) % 3;
+      const af = Math.min(2, Math.floor((1 - t.shootKick) * 3));
       key = 'wizard_atk_' + af;
     } else {
-      const fi = Math.floor(animT * 6 + t.bob) % 4;
-      key = 'wizard_idle_' + fi;
+      key = 'wizard_idle_0'; // static idle — no floating multi-frame bob
     }
-    const pulse = 0.28 + 0.12 * Math.sin(animT * 4 + t.bob);
+    drawSize = size + 10;
+  }
+
+  // Soft static aura (no pulse hover)
+  const aura = {
+    dart: '#81c784', sniper: '#66bb6a', bomb: '#90a4ae', ice: '#4fc3f7',
+    farm: '#ffd54f', super: '#ef5350', tack: '#b0bec5', wizard: '#ce93d8'
+  }[t.type];
+  if (aura && !preview) {
     ctx.save();
-    ctx.globalAlpha = pulse;
-    ctx.fillStyle = '#ce93d8';
-    ctx.beginPath(); ctx.arc(t.x, t.y + bob, size * 0.48, 0, Math.PI*2); ctx.fill();
+    ctx.globalAlpha = 0.16;
+    ctx.fillStyle = aura;
+    ctx.beginPath(); ctx.arc(t.x, t.y, size * 0.42, 0, Math.PI*2); ctx.fill();
     ctx.restore();
-    if (!drawImg(key, t.x, t.y + bob, size + 10, size + 10, 0)) {
-      drawImg('tower_wizard', t.x, t.y + bob, size, size, 0);
-    }
-    for (let i = 0; i < 3; i++) {
-      const a = animT * 3 + i * 2.1;
-      const rr = size * 0.42;
-      const sx = t.x + Math.cos(a) * rr;
-      const sy = t.y + bob + Math.sin(a) * rr * 0.55;
-      ctx.globalAlpha = 0.7 + 0.3 * Math.sin(animT * 5 + i);
-      ctx.fillStyle = '#e1bee7';
-      ctx.beginPath(); ctx.arc(sx, sy, 3, 0, Math.PI*2); ctx.fill();
-      ctx.globalAlpha = 1;
-    }
-  } else {
-    // 2-frame idle bob (same art family as wizard)
-    const fi = Math.floor(animT * 4 + (t.bob || 0)) % 2;
-    const animKey = 'tower_' + t.type + '_f' + fi;
-    const key = img(animKey) ? animKey : ('tower_' + t.type);
-    // soft type-colored aura
-    const aura = {
-      dart: '#81c784', sniper: '#66bb6a', bomb: '#90a4ae', ice: '#4fc3f7',
-      farm: '#ffd54f', super: '#ef5350', tack: '#b0bec5'
-    }[t.type];
-    if (aura && !preview) {
-      ctx.save();
-      ctx.globalAlpha = 0.18 + 0.08 * Math.sin(animT * 3 + t.bob);
-      ctx.fillStyle = aura;
-      ctx.beginPath(); ctx.arc(t.x, t.y + bob, size * 0.45, 0, Math.PI*2); ctx.fill();
-      ctx.restore();
-    }
-    if (!drawImg(key, t.x, t.y + bob, size + 8, size + 8, 0)) {
-      if (!drawImg('tower_' + t.type, t.x, t.y + bob, size, size, 0)) {
-        ctx.fillStyle = def.color;
-        ctx.beginPath(); ctx.arc(t.x, t.y + bob, 16, 0, Math.PI*2); ctx.fill();
-      }
+  }
+
+  // Rotation: aim at bloons. Farm/tack stay upright (tack is 360°).
+  // Sprites face up → add PI/2 so "forward" matches aim angle.
+  let rot = 0;
+  if (canAim) rot = aim + Math.PI / 2;
+  else if (t.type === 'tack' && t.shootKick > 0) rot = (1 - t.shootKick) * Math.PI * 0.5; // brief spin on fire
+
+  if (!drawImg(key, px, py, drawSize, drawSize, rot)) {
+    if (!drawImg('tower_' + t.type, px, py, size, size, rot)) {
+      ctx.fillStyle = def.color;
+      ctx.beginPath(); ctx.arc(px, py, 16, 0, Math.PI*2); ctx.fill();
     }
   }
+
+  // Muzzle flash when shooting
+  if (!preview && t.shootFlash > 0 && canAim) {
+    const fl = t.shootFlash;
+    const fx = t.x + Math.cos(aim) * (size * 0.38);
+    const fy = t.y + Math.sin(aim) * (size * 0.38);
+    ctx.save();
+    ctx.globalAlpha = fl;
+    ctx.fillStyle = '#fffde7';
+    ctx.beginPath(); ctx.arc(fx, fy, 6 + 8 * fl, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#ff9800';
+    ctx.beginPath(); ctx.arc(fx, fy, 3 + 4 * fl, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
   if (t.upgradeLevel > 0) {
     ctx.fillStyle = '#ffd700';
     ctx.font = '11px Arial'; ctx.textAlign = 'center';
-    ctx.fillText('★'.repeat(t.upgradeLevel), t.x, t.y + size*0.45 + bob);
+    ctx.fillText('★'.repeat(t.upgradeLevel), t.x, t.y + size * 0.45);
   }
 }
 function drawProjectile(p) {
@@ -1589,7 +1628,7 @@ function drawHUD() {
     const def = TOWER_DEFS[placingTower];
     const valid = canPlace(mouse.x, mouse.y) && mouse.y < H - 130;
     ctx.globalAlpha = 0.75;
-    drawTower({ type: placingTower, x: mouse.x, y: mouse.y, range: def.range, angle: -Math.PI/2, upgradeLevel: 0, bob: 0, spriteSize: def.spriteSize }, true);
+    drawTower({ type: placingTower, x: mouse.x, y: mouse.y, range: def.range, angle: 0, aimAngle: 0, upgradeLevel: 0, shootKick: 0, shootFlash: 0, spriteSize: def.spriteSize }, true);
     ctx.globalAlpha = 1;
     ctx.fillStyle = valid ? '#4caf50' : '#f44336';
     ctx.font = 'bold 14px Segoe UI'; ctx.textAlign = 'center';
