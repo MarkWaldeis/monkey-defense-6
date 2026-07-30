@@ -2,15 +2,28 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Monkey Defense 6</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden;background:#0a0a14;font-family:'Nunito',Segoe UI,Arial,sans-serif}
-canvas{display:block;margin:0 auto;cursor:default;background:#0a0a14;position:relative;z-index:1}
-#uiRoot{position:fixed;inset:0;pointer-events:none;z-index:20}
+html,body{
+  width:100%;height:100%;overflow:hidden;background:#0a0a14;
+  font-family:'Nunito',Segoe UI,Arial,sans-serif;
+  touch-action:none;-webkit-tap-highlight-color:transparent;
+  overscroll-behavior:none;
+  position:fixed;inset:0;
+}
+canvas{
+  display:block;margin:0;cursor:default;background:#0a0a14;
+  position:fixed;inset:0;width:100%;height:100%;z-index:1;
+  touch-action:none;
+}
+#uiRoot{position:fixed;inset:0;pointer-events:none;z-index:20;touch-action:manipulation}
 #uiRoot .btd-interactive{pointer-events:auto}
 #btdMapSelect:not(.hidden),#btdSidebar:not(.hidden),#btdUpgradePanel:not(.hidden){pointer-events:auto}
 .hidden{display:none!important;pointer-events:none!important}
@@ -283,6 +296,93 @@ canvas{display:block;margin:0 auto;cursor:default;background:#0a0a14;position:re
 }
 .btd-upg-target{background:linear-gradient(180deg,#64b5f6,#1565c0)}
 .btd-upg-sell{background:linear-gradient(180deg,#ef9a9a,#c62828)}
+
+/* ─── MOBILE / TOUCH LAYOUT ─── */
+@media (max-width:900px), (max-height:620px), (pointer:coarse) {
+  #btdMapSelect{
+    padding:max(8px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right))
+      max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));
+    justify-content:flex-start;overflow-y:auto;overflow-x:hidden;
+    touch-action:pan-y;
+  }
+  .btd-map-stage{width:100%;max-width:100%;gap:6px}
+  .btd-map-viewport{min-height:min(42vh,280px)}
+  .btd-map-page{
+    grid-template-columns:repeat(2,1fr)!important;gap:10px 12px;padding:6px 4px;
+  }
+  .btd-map-title{font-size:clamp(11px,3.2vw,16px)}
+  .btd-map-stars{font-size:10px}
+  .btd-arrow{flex:0 0 36px;height:48px;font-size:20px}
+  .btd-diff-bar{
+    position:relative;bottom:auto;left:auto;transform:none;
+    flex-wrap:wrap;justify-content:center;gap:10px 14px;margin:10px 0 8px;
+  }
+  .btd-diff .medal{width:44px;height:44px;font-size:20px}
+  .btd-diff{font-size:10px}
+  .btd-back{width:44px;height:44px;top:max(10px,env(safe-area-inset-top));left:max(10px,env(safe-area-inset-left))}
+  .btd-hero{display:none}
+
+  /* Tower bar: bottom strip (thumb-friendly) */
+  #btdSidebar, #btdSidebar.side-right, #btdSidebar.side-left{
+    top:auto!important;left:0!important;right:0!important;bottom:0!important;
+    width:100%!important;height:auto;max-height:34vh;
+    min-height:118px;
+    flex-direction:row!important;align-items:stretch;
+    padding:6px max(6px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(6px,env(safe-area-inset-left));
+    border:none;border-top:4px solid #3e2a0a;
+    background:linear-gradient(180deg,#8b6914 0%,#a0784c 40%,#6b4d12 100%)!important;
+    box-shadow:0 -8px 24px rgba(0,0,0,.45)!important;
+    gap:6px;
+  }
+  #btdSidebar .btd-upg-btn{
+    flex:0 0 auto;align-self:center;font-size:12px;padding:10px 8px;writing-mode:horizontal-tb;
+    max-width:72px;line-height:1.1;
+  }
+  #btdSidebar .btd-sel-name{
+    display:none;
+  }
+  #btdSidebar .btd-tower-grid{
+    flex:1;display:flex!important;grid-template-columns:none!important;
+    flex-direction:row;overflow-x:auto;overflow-y:hidden;
+    gap:8px;padding:4px 2px;align-content:center;align-items:center;
+    -webkit-overflow-scrolling:touch;touch-action:pan-x;
+    scrollbar-width:none;
+  }
+  #btdSidebar .btd-tower-grid::-webkit-scrollbar{display:none}
+  #btdSidebar .btd-tower-cell{
+    flex:0 0 64px;width:64px;height:64px;aspect-ratio:1;border-radius:12px;
+  }
+  #btdSidebar .btd-price{font-size:11px}
+  #btdSidebar .btd-side-actions{
+    flex:0 0 auto;flex-direction:column;gap:6px;margin:0;align-self:center;
+  }
+  #btdSidebar .btd-side-actions button{width:48px;height:40px;font-size:16px}
+
+  /* Upgrade panel: bottom sheet above tower bar */
+  #btdUpgradePanel,
+  #btdUpgradePanel.side-right,
+  #btdUpgradePanel.side-left,
+  #btdUpgradePanel.side-right.dock-left{
+    top:auto!important;left:0!important;right:0!important;
+    bottom:calc(118px + env(safe-area-inset-bottom,0px))!important;
+    width:100%!important;max-height:48vh;height:auto;
+    border-radius:16px 16px 0 0!important;
+    border-left:none;border-right:none;border-bottom:none;
+    box-shadow:0 -10px 28px rgba(0,0,0,.5)!important;
+    padding-bottom:8px;
+  }
+  .btd-upg-head img{width:48px;height:48px}
+  .btd-upg-title{font-size:15px}
+  .btd-upg-paths{max-height:28vh}
+  .btd-path-buy{min-height:46px;padding:4px 6px}
+  .btd-path-buy .nm{font-size:12px}
+  .btd-path-buy .ds{font-size:9px}
+  .btd-upg-foot button{height:40px;font-size:13px}
+}
+@media (max-width:420px) {
+  .btd-map-page{grid-template-columns:1fr 1fr!important}
+  #btdSidebar .btd-tower-cell{flex:0 0 56px;width:56px;height:56px}
+}
 </style>
 </head>
 <body>
@@ -1189,17 +1289,48 @@ function dist2(x1,y1,x2,y2){const dx=x2-x1,dy=y2-y1;return dx*dx+dy*dy;}
 function rand(a,b){return a+Math.random()*(b-a);}
 function stars(n){return '★'.repeat(n)+'☆'.repeat(4-n);}
 
+function isMobileUi() {
+  return window.matchMedia('(max-width:900px), (max-height:620px), (pointer:coarse)').matches
+    || Math.min(window.innerWidth, window.innerHeight) < 700;
+}
+/** CSS height of bottom tower bar on mobile (approx). */
+function mobileBarCssH() {
+  if (!isMobileUi()) return 0;
+  const el = document.getElementById('btdSidebar');
+  if (el && !el.classList.contains('hidden') && el.offsetHeight > 40) return el.offsetHeight;
+  return 120;
+}
 function resize() {
-  const vw = Math.max(window.innerWidth, 1280);
-  const vh = Math.max(window.innerHeight, 720);
-  canvas.width = vw; canvas.height = vh;
+  // Use real viewport (not min 1280) so phones scale correctly
+  const vv = window.visualViewport;
+  const vw = Math.max(1, Math.floor((vv && vv.width) || window.innerWidth));
+  const vh = Math.max(1, Math.floor((vv && vv.height) || window.innerHeight));
+  canvas.width = vw;
+  canvas.height = vh;
+  canvas.style.width = vw + 'px';
+  canvas.style.height = vh + 'px';
+  // leave room at bottom for mobile tower strip when in gameplay
+  const bottomPad = (gameState === State.GAMEPLAY || gameState === State.PAUSE) ? mobileBarCssH() : 0;
+  const usableH = Math.max(200, vh - bottomPad * 0.15); // letterbox mostly via scale
   scale = Math.min(vw / BASE_W, vh / BASE_H);
+  // slightly smaller on very short phones so UI fits
+  if (isMobileUi()) scale = Math.min(scale, Math.min(vw / BASE_W, (vh - bottomPad * 0.35) / BASE_H));
   W = BASE_W; H = BASE_H;
   ox = (vw - BASE_W * scale) / 2;
-  oy = (vh - BASE_H * scale) / 2;
+  oy = (vh - bottomPad * 0.5 - BASE_H * scale) / 2;
+  if (oy < 4) oy = 4;
 }
 window.addEventListener('resize', resize);
+window.addEventListener('orientationchange', () => setTimeout(resize, 120));
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', resize);
+  window.visualViewport.addEventListener('scroll', resize);
+}
 resize();
+function clientToGame(clientX, clientY) {
+  const r = canvas.getBoundingClientRect();
+  return toGame(clientX - r.left, clientY - r.top);
+}
 function toGame(cx, cy) { return { x: (cx - ox) / scale, y: (cy - oy) / scale }; }
 
 function buildPath(map) {
@@ -1560,13 +1691,21 @@ function fireTower(tower, target) {
 /** Sidebar width in game coordinates (DOM px → canvas logical). */
 function sidebarGameW() {
   const s = scale > 0.01 ? scale : 1;
+  if (isMobileUi()) return 20; // bottom bar — use overSidebar Y check instead
   return Math.ceil(SIDEBAR_CSS_W / s) + 12;
 }
 /** True if game-point is under the docked tower menu (viewport-based). */
-function overSidebar(x) {
+function overSidebar(x, y) {
+  const pad = 8;
+  if (isMobileUi()) {
+    // bottom tower strip
+    const barH = mobileBarCssH();
+    const r = canvas.getBoundingClientRect();
+    const screenY = r.top + oy + (y != null ? y : mouse.y) * scale;
+    return screenY > window.innerHeight - barH - pad;
+  }
   const r = canvas.getBoundingClientRect();
   const screenX = r.left + ox + x * scale;
-  const pad = 8;
   if (sidebarSide === 'right') return screenX > window.innerWidth - SIDEBAR_CSS_W - pad;
   return screenX < SIDEBAR_CSS_W + pad;
 }
@@ -1589,9 +1728,10 @@ function isOnWater(x, y) {
 function canPlace(x, y, type) {
   type = type || placingTower;
   const def = type ? TOWER_DEFS[type] : null;
-  // Leave room for the docked BTD sidebar (may overhang map)
-  if (y < 55 || y > H - 30) return false;
-  if (overSidebar(x)) return false;
+  // Leave room for HUD / mobile bottom bar
+  const bottomLimit = isMobileUi() ? H - 50 : H - 30;
+  if (y < 55 || y > bottomLimit) return false;
+  if (overSidebar(x, y)) return false;
   if (x < 16 || x > W - 16) return false;
   for (const p of gamePaths) if (distToPath(x, y, p) < 32) return false;
   for (const t of towers) if (dist(x, y, t.x, t.y) < 40) return false;
@@ -1614,10 +1754,15 @@ function canPlace(x, y, type) {
   return true;
 }
 /**
- * Dock menu opposite the cursor ONLY while placing a tower (ghost hover).
- * Default / anytime not placing → fixed on the right.
+ * Dock menu opposite the cursor ONLY while placing a tower (desktop).
+ * Mobile uses a fixed bottom tower bar — no side flip.
  */
 function updateSidebarDock() {
+  if (typeof isMobileUi === 'function' && isMobileUi()) {
+    sidebarSide = 'right';
+    applySidebarDock();
+    return;
+  }
   if (gameState !== State.GAMEPLAY && gameState !== State.PAUSE) {
     if (sidebarSide !== 'right') {
       sidebarSide = 'right';
@@ -1625,7 +1770,6 @@ function updateSidebarDock() {
     }
     return;
   }
-  // Not placing → stay parked on the right
   if (!placingTower) {
     if (sidebarSide !== 'right') {
       sidebarSide = 'right';
@@ -1633,8 +1777,6 @@ function updateSidebarDock() {
     }
     return;
   }
-  // Placing: flip only when cursor is clearly on one half (hysteresis)
-  // cursor left → menu right (default free left); cursor right → menu left (free right)
   let next = sidebarSide;
   if (mouse.x < W * 0.42) next = 'right';
   else if (mouse.x > W * 0.58) next = 'left';
@@ -1895,6 +2037,7 @@ function startGame() {
   if (typeof btdLastState !== 'undefined') btdLastState = null;
   if (typeof btdLastCash !== 'undefined') btdLastCash = -1;
   applySidebarDock();
+  if (typeof resize === 'function') setTimeout(resize, 50);
 }
 function roundThreats(r) {
   const waves = ROUNDS[r] || [];
@@ -2140,29 +2283,75 @@ function updateGameplay(t, diff) {
   }
 }
 
-// ─── INPUT ───────────────────────────────────────────────────
-// Window-level mouse so docking works over canvas AND the DOM sidebar
-window.addEventListener('mousemove', e => {
-  const r = canvas.getBoundingClientRect();
-  const g = toGame(e.clientX - r.left, e.clientY - r.top);
+// ─── INPUT (mouse + touch / mobile) ──────────────────────────
+function setMouseFromClient(clientX, clientY) {
+  const g = clientToGame(clientX, clientY);
   mouse.x = g.x; mouse.y = g.y;
+  return g;
+}
+function cancelPlaceOrSelect() {
+  if (placingTower) { placingTower = null; updateSidebarDock(); sfx('click'); return true; }
+  if (selectedTower) {
+    selectedTower = null;
+    if (typeof renderBtdUpgradePanel === 'function') renderBtdUpgradePanel(true);
+    sfx('click');
+    return true;
+  }
+  return false;
+}
+window.addEventListener('mousemove', e => {
+  setMouseFromClient(e.clientX, e.clientY);
   updateSidebarDock();
 });
 canvas.addEventListener('mousedown', e => {
   ensureAudio();
-  const r = canvas.getBoundingClientRect();
-  const g = toGame(e.clientX - r.left, e.clientY - r.top);
-  mouse.x = g.x; mouse.y = g.y; mouse.down = true;
-  if (e.button === 2) {
-    // Right-click cancels placement / deselects tower
-    if (placingTower) { placingTower = null; updateSidebarDock(); sfx('click'); }
-    else if (selectedTower) { selectedTower = null; if (typeof renderBtdUpgradePanel === 'function') renderBtdUpgradePanel(); sfx('click'); }
-    return;
-  }
+  setMouseFromClient(e.clientX, e.clientY);
+  mouse.down = true;
+  if (e.button === 2) { cancelPlaceOrSelect(); return; }
   mouse.clicked = true;
 });
 canvas.addEventListener('mouseup', () => { mouse.down = false; });
 canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+// Touch: place / select / cancel (long-press ≈ right-click cancel)
+let touchStartT = 0, touchStartX = 0, touchStartY = 0, touchMoved = false;
+canvas.addEventListener('touchstart', e => {
+  if (!e.changedTouches || !e.changedTouches.length) return;
+  e.preventDefault();
+  ensureAudio();
+  const t = e.changedTouches[0];
+  touchStartT = performance.now();
+  touchStartX = t.clientX; touchStartY = t.clientY;
+  touchMoved = false;
+  setMouseFromClient(t.clientX, t.clientY);
+  mouse.down = true;
+  updateSidebarDock();
+}, { passive: false });
+canvas.addEventListener('touchmove', e => {
+  if (!e.changedTouches || !e.changedTouches.length) return;
+  e.preventDefault();
+  const t = e.changedTouches[0];
+  if (Math.hypot(t.clientX - touchStartX, t.clientY - touchStartY) > 12) touchMoved = true;
+  setMouseFromClient(t.clientX, t.clientY);
+  updateSidebarDock();
+}, { passive: false });
+canvas.addEventListener('touchend', e => {
+  if (!e.changedTouches || !e.changedTouches.length) return;
+  e.preventDefault();
+  const t = e.changedTouches[0];
+  setMouseFromClient(t.clientX, t.clientY);
+  mouse.down = false;
+  const held = performance.now() - touchStartT;
+  // Long press = cancel placement / deselect
+  if (held > 520 && !touchMoved) {
+    cancelPlaceOrSelect();
+    return;
+  }
+  if (!touchMoved) mouse.clicked = true;
+  updateSidebarDock();
+}, { passive: false });
+canvas.addEventListener('touchcancel', () => { mouse.down = false; });
+
 window.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     if (gameState === State.GAMEPLAY) { gameState = State.PAUSE; sfx('click'); }
@@ -2210,21 +2399,23 @@ function handleClick() {
   if (gameState === State.GAMEPLAY) {
     {
       const hudPad = (sidebarSide === 'right' ? sidebarGameW() + 12 : 16);
-      if (hitBtn(W - hudPad - 50, 8, 40, 36)) { gameState = State.PAUSE; sfx('click'); return; }
-      if (hitBtn(W - hudPad - 100, 8, 40, 36)) { gameSpeed = gameSpeed >= 3 ? 1 : gameSpeed + 1; sfx('click'); return; }
-      if (hitBtn(W - hudPad - 200, 8, 80, 36)) {
+      // larger hit targets on mobile for top HUD
+    const hitH = isMobileUi() ? 48 : 36;
+    if (hitBtn(W - hudPad - 50, 8, 48, hitH)) { gameState = State.PAUSE; sfx('click'); return; }
+      if (hitBtn(W - hudPad - 108, 8, 48, hitH)) { gameSpeed = gameSpeed >= 3 ? 1 : gameSpeed + 1; sfx('click'); return; }
+      if (hitBtn(W - hudPad - 210, 8, 90, hitH)) {
         if (!roundActive && bloons.filter(b=>b.alive).length === 0) startRound();
         return;
       }
-      if (hitBtn(W - hudPad - 290, 8, 70, 36)) { autoStart = !autoStart; sfx('click'); return; }
+      if (hitBtn(W - hudPad - 300, 8, 78, hitH)) { autoStart = !autoStart; sfx('click'); return; }
     }
     // Upgrade panel is DOM — ignore canvas clicks under it when open
     if (selectedTower) {
       // keep selection; upgrades via DOM panel
     }
     if (placingTower) {
-      // Ignore clicks on sidebar strip
-      if (overSidebar(mx)) return;
+      // Ignore clicks on sidebar strip / mobile bottom bar
+      if (overSidebar(mx, my)) return;
       if (my > 55 && my < H - 20) {
         if (canPlace(mx, my, placingTower)) {
           const cost = TOWER_DEFS[placingTower].cost;
@@ -2242,7 +2433,8 @@ function handleClick() {
       return;
     }
     let found = null;
-    for (const t of towers) if (dist(mx, my, t.x, t.y) < 28) { found = t; break; }
+    const pickR = isMobileUi() ? 42 : 28;
+    for (const t of towers) if (dist(mx, my, t.x, t.y) < pickR) { found = t; break; }
     selectedTower = found;
     btdLastUpgSig = ''; // force panel rebuild on selection change
     if (typeof renderBtdUpgradePanel === 'function') renderBtdUpgradePanel(true);
@@ -3114,27 +3306,26 @@ function renderBtdTowerGrid() {
           renderBtdTowerGrid();
         } else sfx('click');
       };
-      // drag start
-      cell.onmousedown = (e) => {
-        if (e.button !== 0) return;
+      // Drag place (mouse + touch)
+      const startDrag = (clientX, clientY) => {
         if (cash < def.cost) return;
         placingTower = type;
         selectedTower = null;
+        if (typeof hideBtdUpgradePanel === 'function') hideBtdUpgradePanel();
         const ghost = btdEl('dragGhost');
         ghost.src = src;
         ghost.style.display = 'block';
-        ghost.style.left = e.clientX + 'px';
-        ghost.style.top = e.clientY + 'px';
-        const onMove = (ev) => {
-          ghost.style.left = ev.clientX + 'px';
-          ghost.style.top = ev.clientY + 'px';
-          const g = toGame(ev.clientX - canvas.getBoundingClientRect().left, ev.clientY - canvas.getBoundingClientRect().top);
+        ghost.style.left = clientX + 'px';
+        ghost.style.top = clientY + 'px';
+        const onMoveClient = (cx, cy) => {
+          ghost.style.left = cx + 'px';
+          ghost.style.top = cy + 'px';
+          const g = clientToGame(cx, cy);
           const rp = btdEl('rangePreview');
           const def2 = TOWER_DEFS[type];
           const r = def2.range * scale;
-          const rect = canvas.getBoundingClientRect();
-          const sx = rect.left + ox + g.x * scale;
-          const sy = rect.top + oy + g.y * scale;
+          const sx = canvas.getBoundingClientRect().left + ox + g.x * scale;
+          const sy = canvas.getBoundingClientRect().top + oy + g.y * scale;
           rp.style.display = 'block';
           rp.style.width = (r * 2) + 'px';
           rp.style.height = (r * 2) + 'px';
@@ -3146,13 +3337,14 @@ function renderBtdTowerGrid() {
           rp.style.borderColor = ok ? 'rgba(76,175,80,.7)' : 'rgba(244,67,54,.7)';
           rp.style.background = ok ? 'rgba(76,175,80,.12)' : 'rgba(244,67,54,.12)';
         };
-        const onUp = (ev) => {
-          window.removeEventListener('mousemove', onMove);
-          window.removeEventListener('mouseup', onUp);
+        const finish = (cx, cy) => {
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+          window.removeEventListener('touchmove', onTouchMove);
+          window.removeEventListener('touchend', onTouchEnd);
           ghost.style.display = 'none';
           btdEl('rangePreview').style.display = 'none';
-          const rect = canvas.getBoundingClientRect();
-          const g = toGame(ev.clientX - rect.left, ev.clientY - rect.top);
+          const g = clientToGame(cx, cy);
           mouse.x = g.x; mouse.y = g.y;
           updateSidebarDock();
           if (placingTower === type && canPlace(g.x, g.y, type) && g.y > 55 && g.y < H - 20) {
@@ -3166,10 +3358,40 @@ function renderBtdTowerGrid() {
           updateSidebarDock();
           renderBtdTowerGrid();
         };
-        window.addEventListener('mousemove', onMove);
-        window.addEventListener('mouseup', onUp);
+        const onMouseMove = (ev) => onMoveClient(ev.clientX, ev.clientY);
+        const onMouseUp = (ev) => finish(ev.clientX, ev.clientY);
+        const onTouchMove = (ev) => {
+          if (!ev.changedTouches.length) return;
+          ev.preventDefault();
+          onMoveClient(ev.changedTouches[0].clientX, ev.changedTouches[0].clientY);
+        };
+        const onTouchEnd = (ev) => {
+          if (!ev.changedTouches.length) return;
+          finish(ev.changedTouches[0].clientX, ev.changedTouches[0].clientY);
+        };
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+        window.addEventListener('touchmove', onTouchMove, { passive: false });
+        window.addEventListener('touchend', onTouchEnd);
         renderBtdTowerGrid();
       };
+      cell.onmousedown = (e) => {
+        if (e.button !== 0) return;
+        startDrag(e.clientX, e.clientY);
+      };
+      cell.addEventListener('touchstart', (e) => {
+        if (!e.changedTouches.length) return;
+        e.preventDefault();
+        e.stopPropagation();
+        // tap selects for placement; drag moves
+        const t0 = e.changedTouches[0];
+        if (cash >= def.cost) {
+          placingTower = type;
+          selectedTower = null;
+          btdEl('btdSelName').textContent = def.name.toUpperCase();
+        }
+        startDrag(t0.clientX, t0.clientY);
+      }, { passive: false });
     }
     if (cash < def.cost) cell.classList.add('cant-afford');
     grid.appendChild(cell);
