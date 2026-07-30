@@ -49,6 +49,8 @@ let bloons = [], towers = [], projectiles = [], particles = [], floatTexts = [],
 let roundActive = false, spawnQueue = [], spawnTimer = 0;
 let autoStart = false, betweenRoundTimer = 0;
 let totalPopped = 0, totalSpent = 0;
+let roundWarnings = []; // {text, color, life, icon}
+let warnBanner = null;  // persistent between-round banner
 let unlockedMaps = [true, false, false, false, false];
 try { const u = localStorage.getItem('md6_unlocked'); if (u) unlockedMaps = JSON.parse(u); } catch(e) {}
 
@@ -69,6 +71,18 @@ const TOWER_SPRITE = {
   super: 'towers/super_monkey/idle.png',
   tack: 'towers/tack_shooter/idle.png'
 };
+// Wizard multi-frame animation
+const WIZARD_FRAMES = [
+  'towers/wizard_monkey/idle_0.png',
+  'towers/wizard_monkey/idle_1.png',
+  'towers/wizard_monkey/idle_2.png',
+  'towers/wizard_monkey/idle_3.png'
+];
+const WIZARD_ATTACK = [
+  'towers/wizard_monkey/attack_0.png',
+  'towers/wizard_monkey/attack_1.png',
+  'towers/wizard_monkey/attack_2.png'
+];
 
 const BLOON_SPRITE = {
   red: 'bloons/red.png', blue: 'bloons/blue.png', green: 'bloons/green.png',
@@ -91,11 +105,12 @@ const TILE_KEYS = {
   grass: 'tiles/grass.png', grass_alt: 'tiles/grass_alt.png',
   dirt: 'tiles/dirt.png', dirt_alt: 'tiles/dirt_alt.png',
   sand: 'tiles/sand.png', snow: 'tiles/snow.png', snow_alt: 'tiles/snow_alt.png',
-  water: 'tiles/water.png', dark: 'tiles/dark.png', dark_alt: 'tiles/dark_alt.png',
-  path: 'tiles/path_dirt.png', road_h: 'tiles/road_h.png',
+  water: 'tiles/water.png', water_alt: 'tiles/water_alt.png',
+  dark: 'tiles/dark.png', dark_alt: 'tiles/dark_alt.png',
+  path: 'tiles/path_dirt.png', road_h: 'tiles/road_h.png', road_v: 'tiles/road_v.png',
   tree: 'tiles/tree_round.png', tree_star: 'tiles/tree_star.png',
   bush: 'tiles/bush.png', rock1: 'tiles/rock1.png', rock2: 'tiles/rock2.png', rock3: 'tiles/rock3.png',
-  lava: 'tiles/lava_base.png'
+  lava: 'tiles/lava.png', lava_base: 'tiles/lava_base.png'
 };
 
 const UI_KEYS = {
@@ -114,6 +129,8 @@ function buildAssetList() {
   const list = [];
   const add = (key, src) => list.push({ key, src: ASSET_BASE + src });
   Object.entries(TOWER_SPRITE).forEach(([k, v]) => add('tower_' + k, v));
+  WIZARD_FRAMES.forEach((v, i) => add('wizard_idle_' + i, v));
+  WIZARD_ATTACK.forEach((v, i) => add('wizard_atk_' + i, v));
   Object.entries(BLOON_SPRITE).forEach(([k, v]) => add('bloon_' + k, v));
   Object.entries(PROJ_SPRITE).forEach(([k, v]) => add('proj_' + k, v));
   Object.entries(TILE_KEYS).forEach(([k, v]) => add('tile_' + k, v));
@@ -238,7 +255,7 @@ const TOWER_DEFS = {
   wizard: {
     name: 'Wizard Monkey', icon: '🔮', cost: 450, range: 140, fireRate: 0.8, damage: 1, pierce: 2,
     projSpeed: 350, projType: 'magic', special: null, canPopLead: true, canPopFrozen: true, canPopPurple: false,
-    color: '#9c27b0', spriteSize: 50,
+    color: '#9c27b0', spriteSize: 58,
     upgrades: [
       { name: 'Fireball', cost: 350, desc: 'Occasional AoE fireball', changes: { fireball: true } },
       { name: 'Wall of Fire', cost: 600, desc: 'Places fire on path', changes: { wallOfFire: true } },
@@ -692,13 +709,29 @@ function canPlace(x, y) {
   return true;
 }
 
-// ─── MAP TILE CACHE ──────────────────────────────────────────
+// ─── MAP TILE CACHE (clean Kenney-style flat terrain) ────────
 function terrainTileKeys(terrain) {
   switch (terrain) {
     case 'snow': return ['tile_snow', 'tile_snow_alt'];
-    case 'lava': return ['tile_lava', 'tile_dirt'];
+    case 'lava': return ['tile_lava_base', 'tile_lava'];
     case 'dark': return ['tile_dark', 'tile_dark_alt'];
     default: return ['tile_grass', 'tile_grass_alt'];
+  }
+}
+function terrainFillColor(terrain) {
+  switch (terrain) {
+    case 'snow': return '#dce9f5';
+    case 'lava': return '#3a201c';
+    case 'dark': return '#2a2e48';
+    default: return '#5cb04a';
+  }
+}
+function pathColors(terrain) {
+  switch (terrain) {
+    case 'snow': return { edge: '#8aa0b8', fill: '#c5d4e4', dash: 'rgba(255,255,255,0.35)' };
+    case 'lava': return { edge: '#4a2010', fill: '#6b3a28', dash: 'rgba(255,140,60,0.25)' };
+    case 'dark': return { edge: '#1a1a2e', fill: '#3d4260', dash: 'rgba(180,160,255,0.2)' };
+    default: return { edge: '#8b6914', fill: '#d2b48c', dash: 'rgba(255,255,255,0.22)' };
   }
 }
 function buildMapCache() {
@@ -710,84 +743,121 @@ function buildMapCache() {
   const off = document.createElement('canvas');
   off.width = W; off.height = mapH + 20;
   const g = off.getContext('2d');
+  // solid base (no seams)
+  g.fillStyle = terrainFillColor(map.terrain);
+  g.fillRect(0, 0, off.width, off.height);
+  // soft tile pattern (low contrast, clean)
   const keys = terrainTileKeys(map.terrain);
-  // fill terrain
+  g.globalAlpha = 0.55;
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
-      const key = keys[(row + col) % keys.length];
-      const im = img(key) || img('tile_grass') || img('k100');
-      if (im) g.drawImage(im, col * TS - 4, row * TS - 4, TS + 2, TS + 2);
-      else {
-        g.fillStyle = map.terrain === 'snow' ? '#e3f2fd' : map.terrain === 'lava' ? '#3e2723' : map.terrain === 'dark' ? '#1a1a2e' : '#4caf50';
-        g.fillRect(col * TS, row * TS, TS, TS);
-      }
+      const key = keys[(row * 3 + col * 2) % keys.length];
+      const im = img(key) || img('tile_grass');
+      if (im) g.drawImage(im, col * TS, row * TS, TS, TS);
     }
   }
-  // path ribbon with dirt tiles
+  g.globalAlpha = 1;
+  // soft vignette for polish
+  const vg = g.createRadialGradient(W/2, mapH/2, mapH*0.2, W/2, mapH/2, mapH*0.85);
+  vg.addColorStop(0, 'rgba(0,0,0,0)');
+  vg.addColorStop(1, 'rgba(0,0,0,0.12)');
+  g.fillStyle = vg;
+  g.fillRect(0, 0, W, mapH);
+
+  const pc = pathColors(map.terrain);
+  // clean path ribbons
   for (const pts of gamePaths) {
-    // thick dirt stroke approximation via sampling
-    const pm = pathMetrics(pts);
-    const steps = Math.max(40, Math.floor(pm.total / 18));
-    const pathImg = img('tile_path') || img('tile_dirt') || img('k001') || img('tile_road_h');
-    for (let s = 0; s <= steps; s++) {
-      const pos = posOnPath(pts, pm.segs, pm.total, s / steps);
-      const ly = pos.y - mapTop;
-      if (pathImg) g.drawImage(pathImg, pos.x - 28, ly - 28, 56, 56);
-      else {
-        g.fillStyle = '#a1887f';
-        g.beginPath(); g.arc(pos.x, ly, 20, 0, Math.PI*2); g.fill();
-      }
-    }
-    // path edge line
-    g.strokeStyle = 'rgba(93,64,55,0.55)';
-    g.lineWidth = 38; g.lineCap = 'round'; g.lineJoin = 'round';
+    // shadow
+    g.strokeStyle = 'rgba(0,0,0,0.18)';
+    g.lineWidth = 44; g.lineCap = 'round'; g.lineJoin = 'round';
+    g.beginPath();
+    g.moveTo(pts[0].x + 2, pts[0].y - mapTop + 3);
+    for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x + 2, pts[i].y - mapTop + 3);
+    g.stroke();
+    // outer edge
+    g.strokeStyle = pc.edge;
+    g.lineWidth = 40;
     g.beginPath();
     g.moveTo(pts[0].x, pts[0].y - mapTop);
     for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x, pts[i].y - mapTop);
     g.stroke();
-    g.strokeStyle = 'rgba(161,136,127,0.9)';
-    g.lineWidth = 28;
+    // fill
+    g.strokeStyle = pc.fill;
+    g.lineWidth = 30;
     g.beginPath();
     g.moveTo(pts[0].x, pts[0].y - mapTop);
     for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x, pts[i].y - mapTop);
     g.stroke();
+    // center dashes
+    g.strokeStyle = pc.dash;
+    g.lineWidth = 2;
+    g.setLineDash([10, 12]);
+    g.beginPath();
+    g.moveTo(pts[0].x, pts[0].y - mapTop);
+    for (let i = 1; i < pts.length; i++) g.lineTo(pts[i].x, pts[i].y - mapTop);
+    g.stroke();
+    g.setLineDash([]);
   }
-  // decorations
+  // decorations (only off-path)
   for (const d of map.decorations) {
     const x = d.x * W, y = d.y * mapH;
-    drawDecoTo(g, d.type, x, y);
+    let onPath = false;
+    for (const pts of gamePaths) {
+      if (distToPath(x, y + mapTop, pts) < 40) { onPath = true; break; }
+    }
+    if (!onPath || d.type === 'stump' || d.type === 'lake' || d.type === 'castle') {
+      drawDecoTo(g, d.type, x, y, map.terrain);
+    }
   }
-  // entrance / exit
+  // entrance / exit markers
   for (const pts of gamePaths) {
-    g.fillStyle = '#4caf50';
-    g.beginPath(); g.arc(pts[0].x, pts[0].y - mapTop, 12, 0, Math.PI*2); g.fill();
-    g.fillStyle = '#f44336';
-    const last = pts[pts.length-1];
-    g.beginPath(); g.arc(last.x, last.y - mapTop, 12, 0, Math.PI*2); g.fill();
+    const sx = pts[0].x, sy = pts[0].y - mapTop;
+    const ex = pts[pts.length-1].x, ey = pts[pts.length-1].y - mapTop;
+    // start
+    g.fillStyle = 'rgba(76,175,80,0.9)';
+    g.beginPath(); g.arc(sx, sy, 14, 0, Math.PI*2); g.fill();
+    g.strokeStyle = '#fff'; g.lineWidth = 2; g.stroke();
+    g.fillStyle = '#fff'; g.font = 'bold 11px Segoe UI'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText('IN', sx, sy);
+    // exit
+    g.fillStyle = 'rgba(244,67,54,0.9)';
+    g.beginPath(); g.arc(ex, ey, 14, 0, Math.PI*2); g.fill();
+    g.strokeStyle = '#fff'; g.lineWidth = 2; g.stroke();
+    g.fillStyle = '#fff';
+    g.fillText('OUT', ex, ey);
   }
   mapCache = off;
 }
-function drawDecoTo(g, type, x, y) {
+function drawDecoTo(g, type, x, y, terrain) {
   const draw = (key, s) => {
     const im = img(key);
     if (im) g.drawImage(im, x - s/2, y - s/2, s, s);
   };
   switch (type) {
-    case 'tree': draw('tile_tree', 72); break;
-    case 'tree_star': draw('tile_tree_star', 64); break;
-    case 'bush': draw('tile_bush', 48); break;
-    case 'rock': draw('tile_rock1', 48); break;
+    case 'tree': draw('tile_tree', 64); break;
+    case 'tree_star': draw('tile_tree_star', 58); break;
+    case 'bush': draw('tile_bush', 40); break;
+    case 'rock': draw('tile_rock1', 40); break;
     case 'stump':
-      draw('k133', 90);
+      draw('k133', 80);
       break;
-    case 'lake':
-      draw('tile_water', 160);
+    case 'lake': {
+      const im = img('tile_water');
+      if (im) {
+        g.globalAlpha = 0.85;
+        g.drawImage(im, x - 90, y - 55, 180, 110);
+        g.globalAlpha = 1;
+      }
+      g.strokeStyle = 'rgba(255,255,255,0.25)';
+      g.lineWidth = 2;
+      g.beginPath(); g.ellipse(x, y, 88, 52, 0, 0, Math.PI*2); g.stroke();
       break;
+    }
     case 'castle':
-      draw('tile_dark', 80);
-      draw('k180', 70);
+      draw('k180', 72);
+      draw('tile_rock2', 36);
       break;
-    default: draw('tile_bush', 40);
+    default: draw('tile_bush', 36);
   }
 }
 
@@ -797,12 +867,36 @@ function startGame() {
   lives = d.lives; cash = d.cash; round = 0; totalPopped = 0; totalSpent = 0;
   gameSpeed = 1; bloons = []; towers = []; projectiles = []; particles = [];
   floatTexts = []; firePatches = []; spriteAnims = [];
+  roundWarnings = []; warnBanner = null;
   placingTower = null; selectedTower = null; roundActive = false; spawnQueue = [];
   betweenRoundTimer = 1.5;
   gamePaths = buildPath(MAPS[selectedMap]);
   pathMetricsArr = gamePaths.map(p => pathMetrics(p));
   buildMapCache();
   gameState = State.GAMEPLAY;
+  sfx('click');
+}
+function roundThreats(r) {
+  const waves = ROUNDS[r] || [];
+  return {
+    camo: waves.some(w => w.camo),
+    lead: waves.some(w => w.t === 'lead')
+  };
+}
+function pushWarning(text, color, life) {
+  roundWarnings.push({ text, color: color || '#ffeb3b', life: life || 5.5, maxLife: life || 5.5 });
+}
+function announceThreatsForRound(r, asNext) {
+  const t = roundThreats(r);
+  if (!t.camo && !t.lead) { warnBanner = null; return; }
+  const parts = [];
+  if (t.camo) parts.push('CAMO / TARN');
+  if (t.lead) parts.push('LEAD / BLEI');
+  const prefix = asNext ? ('⚠ Nächste Runde (' + r + '): ') : ('⚠ Runde ' + r + ': ');
+  const msg = prefix + parts.join(' + ') + '!';
+  const color = t.lead && t.camo ? '#ff9800' : t.lead ? '#90a4ae' : '#81c784';
+  pushWarning(msg, color, asNext ? 6.5 : 4.5);
+  warnBanner = { text: msg, color, pulse: 0 };
   sfx('click');
 }
 function startRound() {
@@ -818,6 +912,10 @@ function startRound() {
   });
   spawnQueue.sort((a,b) => a.time - b.time);
   spawnTimer = 0; roundActive = true; sfx('round');
+  // show current-round threat toast (camo / lead this round)
+  const now = roundThreats(round);
+  if (now.camo || now.lead) announceThreatsForRound(round, false);
+  else warnBanner = null;
 }
 function endRound() {
   roundActive = false;
@@ -833,6 +931,12 @@ function endRound() {
   sfx('cash');
   if (round >= maxRounds) { winGame(); return; }
   betweenRoundTimer = 1.0;
+  // ONE ROUND AHEAD: warn about camo / lead in the upcoming round
+  const next = round + 1;
+  if (next <= maxRounds) {
+    const nxt = roundThreats(next);
+    if (nxt.camo || nxt.lead) announceThreatsForRound(next, true);
+  }
 }
 function winGame() {
   gameState = State.VICTORY; sfx('victory');
@@ -863,6 +967,11 @@ function update(rawDt) {
     if (a.t >= 1 / a.fps) { a.t = 0; a.frame++; }
     if (a.frame >= a.frames) spriteAnims.splice(i, 1);
   }
+  for (let i = roundWarnings.length - 1; i >= 0; i--) {
+    roundWarnings[i].life -= rawDt;
+    if (roundWarnings[i].life <= 0) roundWarnings.splice(i, 1);
+  }
+  if (warnBanner) warnBanner.pulse += rawDt;
 }
 function updateGameplay(t, diff) {
   if (!roundActive && bloons.filter(b => b.alive).length === 0 && autoStart && round < maxRounds) {
@@ -1205,11 +1314,47 @@ function drawTower(t, preview) {
   // shadow
   ctx.fillStyle = 'rgba(0,0,0,0.25)';
   ctx.beginPath(); ctx.ellipse(t.x, t.y + size*0.35, size*0.28, size*0.12, 0, 0, Math.PI*2); ctx.fill();
-  // sprite rotated toward target
-  const key = 'tower_' + t.type;
-  if (!drawImg(key, t.x, t.y + bob, size, size, t.angle + Math.PI/2)) {
-    ctx.fillStyle = def.color;
-    ctx.beginPath(); ctx.arc(t.x, t.y + bob, 16, 0, Math.PI*2); ctx.fill();
+
+  // Wizard: animated frames + soft (no full sprite rotation — cleaner look)
+  if (t.type === 'wizard' && !preview) {
+    const attacking = t.cooldown > 0 && t.cooldown > t.fireRate - 0.25;
+    let key;
+    if (attacking) {
+      const af = Math.floor((1 - Math.max(0, t.cooldown - (t.fireRate - 0.25)) / 0.25) * 3) % 3;
+      key = 'wizard_atk_' + af;
+    } else {
+      const fi = Math.floor(animT * 6 + t.bob) % 4;
+      key = 'wizard_idle_' + fi;
+    }
+    // soft aura
+    const pulse = 0.35 + 0.15 * Math.sin(animT * 4 + t.bob);
+    ctx.save();
+    ctx.globalAlpha = pulse;
+    ctx.fillStyle = '#ce93d8';
+    ctx.beginPath(); ctx.arc(t.x, t.y + bob, size * 0.48, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+    if (!drawImg(key, t.x, t.y + bob, size + 10, size + 10, 0)) {
+      drawImg('tower_wizard', t.x, t.y + bob, size, size, 0);
+    }
+    // orbiting sparkles
+    for (let i = 0; i < 3; i++) {
+      const a = animT * 3 + i * 2.1;
+      const rr = size * 0.42;
+      const sx = t.x + Math.cos(a) * rr;
+      const sy = t.y + bob + Math.sin(a) * rr * 0.55;
+      ctx.globalAlpha = 0.7 + 0.3 * Math.sin(animT * 5 + i);
+      ctx.fillStyle = '#e1bee7';
+      ctx.beginPath(); ctx.arc(sx, sy, 3, 0, Math.PI*2); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  } else {
+    // other towers: rotate toward target
+    const key = 'tower_' + t.type;
+    const rot = (t.type === 'farm' || t.type === 'ice' || t.type === 'tack') ? 0 : (t.angle + Math.PI/2);
+    if (!drawImg(key, t.x, t.y + bob, size, size, rot)) {
+      ctx.fillStyle = def.color;
+      ctx.beginPath(); ctx.arc(t.x, t.y + bob, 16, 0, Math.PI*2); ctx.fill();
+    }
   }
   if (t.upgradeLevel > 0) {
     ctx.fillStyle = '#ffd700';
@@ -1281,6 +1426,36 @@ function drawHUD() {
   drawSpriteButton(W-250, 8, 80, 34, '▶ GO', (!roundActive && bloons.filter(b=>b.alive).length===0) ? 'ui_btn_green' : 'ui_btn_grey');
   drawSpriteButton(W-150, 8, 40, 34, gameSpeed + 'x', 'ui_btn_purple');
   drawSpriteButton(W-50, 8, 40, 34, '⏸', 'ui_btn_grey');
+
+  // Round threat warning banners (camo / lead)
+  if (roundWarnings.length || warnBanner) {
+    let yOff = 58;
+    // sticky banner while between rounds or active toast
+    if (warnBanner && (!roundActive || warnBanner.pulse < 4)) {
+      const pulse = 0.85 + 0.15 * Math.sin((warnBanner.pulse || 0) * 6);
+      ctx.globalAlpha = pulse;
+      ctx.fillStyle = 'rgba(20,16,30,0.88)';
+      roundRect(W/2 - 280, yOff, 560, 36, 10); ctx.fill();
+      ctx.strokeStyle = warnBanner.color; ctx.lineWidth = 2;
+      roundRect(W/2 - 280, yOff, 560, 36, 10); ctx.stroke();
+      ctx.fillStyle = warnBanner.color;
+      ctx.font = 'bold 15px Segoe UI'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(warnBanner.text, W/2, yOff + 18);
+      ctx.globalAlpha = 1;
+      yOff += 42;
+    }
+    for (const w of roundWarnings) {
+      const a = Math.min(1, w.life / 0.8) * Math.min(1, (w.maxLife - w.life) < 0.5 ? w.life / 0.5 : 1);
+      ctx.globalAlpha = clamp(a, 0, 1);
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      roundRect(W/2 - 240, yOff, 480, 28, 8); ctx.fill();
+      ctx.fillStyle = w.color;
+      ctx.font = 'bold 13px Segoe UI'; ctx.textAlign = 'center';
+      ctx.fillText(w.text, W/2, yOff + 14);
+      ctx.globalAlpha = 1;
+      yOff += 32;
+    }
+  }
 
   // bottom tower bar
   const py = H - 120;
