@@ -17,23 +17,40 @@
 - **BTD DOM UI** (`#btdMapSelect`, `#btdSidebar`): map carousel + wood tower sidebar
 - Map click uses **event delegation** on `#btdMapTrack` (`data-map` index) → `startGame()`
 - All maps unlocked for playability
-- Towers aim/rotate toward bloons, recoil + muzzle flash; no floating bob
-- Bomb = Kenney cannon; Tack = multi-barrel machine; other monkeys character art
+- **Top-down 3D towers (BTD6-style):**
+  - Fixed **pad** at `(x,y)` (never rotates)
+  - **Body** sprite faces UP; rotates with `aim + π/2` around same point
+  - Shoot: `attack_0/1` frames + body recoil + muzzle flash (pad stays put)
+  - Bomb/tack: Kenney top-down turrets; monkeys: original top-down art
 - Paths end at **BASE fort**; leaks cost RBE lives with LEAK feedback
 - Camo/Lead warnings one round ahead
 
 ## Towers (order)
-dart, sniper, bomb, ice, wizard, farm, super, tack — 3 upgrades each
+dart, boomer, tack, sniper, ninja, **water**, glue, bomb, ice, wizard, farm, super  
+- **Water Monkey** (Buccaneer-style): water shots, pierce, late AoE  
+- **Glue Gunner**: slows bloons  
+- **Boomerang**: high pierce  
+- **Ninja**: camo from start  
+## Modes
+Easy R40 · Medium R60 · Hard R100 · Expert R100 (harder stats)  
+## Enemies
+MOAB → BFB → ZOMG → DDT (camo+lead) → BAD; high HP BTD6-style bosses
 
 ## Known UX
 - Difficulty tabs set `selectedDiff` before map click
-- Sidebar drag-or-click to place; leave margin for right sidebar (`x < W-120`)
-- Upgrade panel draws left of sidebar when a placed tower is selected
+- **Large tower sidebar** (~220px): **fixed right** unless actively placing a tower; only while `placingTower` is set, auto-flips opposite the cursor (hysteresis 42%/58%) so the free side is placeable; cancels → snaps back right
+- `canPlace` / drag-drop use `overSidebar()` + `sidebarGameW()` (scale-aware)
+- Upgrade panel (`towerPanelX()`) sits next to the free edge of the docked sidebar
+- Sidebar drag-or-click to place
 
 ## Recent fixes
 - Map select soft-lock: cards rebuilt every frame → fixed; now rebuild only on enter
 - Map click: delegated handler + all maps unlocked
 - Explicit `display`/`pointer-events` on map UI show/hide
+- Bigger tower menu + auto left/right dock opposite cursor
+- Sidebar full viewport height; HUD pause/speed/GO shifted left of dock
+- Ninja Monkey (camo detect) + shuriken assets
+- Full top-down tower rebuild (pads + rotating bodies + attack frames for all 9)
 
 ## Next ideas (if continuing)
 - Real map thumbnails per map

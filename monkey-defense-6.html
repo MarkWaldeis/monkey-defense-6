@@ -117,55 +117,69 @@ canvas{display:block;margin:0 auto;cursor:default;background:#0a0a14;position:re
 
 /* ─── BTD TOWER SIDEBAR ─── */
 #btdSidebar{
-  position:absolute;top:52px;right:0;bottom:0;width:108px;
+  --side-w: min(220px, 22vw);
+  position:absolute;top:0;bottom:0;width:var(--side-w);
   background:linear-gradient(90deg,#6b4d12 0%,#8b6914 12%,#a0784c 50%,#8b6914 88%,#5a3d0e 100%);
-  box-shadow:-6px 0 18px rgba(0,0,0,.45),inset 2px 0 0 rgba(255,255,255,.15);
-  display:flex;flex-direction:column;padding:8px 6px 10px;z-index:5;
-  border-left:3px solid #3e2a0a;
+  display:flex;flex-direction:column;padding:14px 10px 14px;z-index:5;
+  transition:left .22s cubic-bezier(.2,.8,.2,1), right .22s cubic-bezier(.2,.8,.2,1),
+    box-shadow .22s ease, border-color .22s ease;
+}
+/* default / right dock */
+#btdSidebar, #btdSidebar.side-right{
+  right:0; left:auto;
+  border-left:4px solid #3e2a0a; border-right:none;
+  box-shadow:-10px 0 28px rgba(0,0,0,.5), inset 2px 0 0 rgba(255,255,255,.15);
+}
+/* left dock — free right side for placing */
+#btdSidebar.side-left{
+  left:0; right:auto;
+  border-right:4px solid #3e2a0a; border-left:none;
+  background:linear-gradient(270deg,#6b4d12 0%,#8b6914 12%,#a0784c 50%,#8b6914 88%,#5a3d0e 100%);
+  box-shadow:10px 0 28px rgba(0,0,0,.5), inset -2px 0 0 rgba(255,255,255,.15);
 }
 .btd-upg-btn{
   background:linear-gradient(180deg,#7ed957,#3faa2a 55%,#2d8a1c);
-  border:2px solid #1f6b14;border-radius:14px;color:#fff;font-family:'Luckiest Guy',cursive;
-  font-size:15px;letter-spacing:1px;padding:8px 4px;cursor:pointer;
-  text-shadow:0 2px 0 #1a5a12;box-shadow:inset 0 2px 0 rgba(255,255,255,.35),0 3px 0 #1a5a12;
+  border:3px solid #1f6b14;border-radius:16px;color:#fff;font-family:'Luckiest Guy',cursive;
+  font-size:clamp(16px,1.5vw,20px);letter-spacing:1px;padding:12px 6px;cursor:pointer;
+  text-shadow:0 2px 0 #1a5a12;box-shadow:inset 0 2px 0 rgba(255,255,255,.35),0 4px 0 #1a5a12;
   transition:transform .15s;
 }
 .btd-upg-btn:hover{transform:scale(1.04)}
 .btd-upg-btn:active{transform:scale(.96)}
 .btd-sel-name{
-  margin:8px 2px 6px;background:linear-gradient(180deg,#fff8e7,#e8dcc8);
-  border-radius:8px;border:2px solid #c4a86a;text-align:center;
-  font-family:'Luckiest Guy',cursive;font-size:11px;color:#1a1a1a;padding:4px 2px;
+  margin:10px 2px 8px;background:linear-gradient(180deg,#fff8e7,#e8dcc8);
+  border-radius:10px;border:2px solid #c4a86a;text-align:center;
+  font-family:'Luckiest Guy',cursive;font-size:clamp(13px,1.2vw,16px);color:#1a1a1a;padding:8px 4px;
   text-shadow:0 1px 0 #fff;line-height:1.15;
 }
 .btd-tower-grid{
-  flex:1;overflow-y:auto;overflow-x:hidden;display:grid;grid-template-columns:1fr 1fr;gap:8px 6px;
-  padding:2px 2px 8px;align-content:start;
+  flex:1;overflow-y:auto;overflow-x:hidden;display:grid;grid-template-columns:1fr 1fr;gap:12px 10px;
+  padding:4px 2px 10px;align-content:start;
   scrollbar-width:thin;scrollbar-color:#c4a86a transparent;
 }
 .btd-tower-cell{
-  position:relative;aspect-ratio:1;border-radius:10px;cursor:pointer;
+  position:relative;aspect-ratio:1;border-radius:14px;cursor:pointer;
   background:linear-gradient(180deg,#d8d0c0,#b8b0a0);
-  border:2px solid #7a7260;box-shadow:inset 0 1px 0 rgba(255,255,255,.4);
+  border:3px solid #7a7260;box-shadow:inset 0 1px 0 rgba(255,255,255,.4);
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   transition:transform .15s ease-out,box-shadow .15s,border-color .15s;
 }
-.btd-tower-cell:hover{transform:scale(1.08);box-shadow:0 0 10px rgba(245,198,66,.5)}
-.btd-tower-cell.selected{border-color:#f5c542;box-shadow:0 0 0 2px #f5c542,0 0 12px rgba(245,198,66,.7);transform:scale(1.06)}
+.btd-tower-cell:hover{transform:scale(1.08);box-shadow:0 0 14px rgba(245,198,66,.55)}
+.btd-tower-cell.selected{border-color:#f5c542;box-shadow:0 0 0 3px #f5c542,0 0 16px rgba(245,198,66,.75);transform:scale(1.06)}
 .btd-tower-cell.locked{filter:brightness(.55);cursor:not-allowed}
 .btd-tower-cell.locked:hover{transform:none;box-shadow:none}
 .btd-tower-cell.cant-afford .btd-price{color:#e53935}
-.btd-tower-cell img{width:70%;height:70%;object-fit:contain;pointer-events:none}
-.btd-price{font-size:11px;font-weight:900;color:#2e7d32;text-shadow:0 1px 0 rgba(255,255,255,.5);margin-top:1px}
+.btd-tower-cell img{width:72%;height:72%;object-fit:contain;pointer-events:none}
+.btd-price{font-size:clamp(12px,1.1vw,15px);font-weight:900;color:#2e7d32;text-shadow:0 1px 0 rgba(255,255,255,.5);margin-top:2px}
 .btd-lock{
-  position:absolute;bottom:4px;left:50%;transform:translateX(-50%);
-  font-size:16px;filter:drop-shadow(0 1px 1px #000);
+  position:absolute;bottom:6px;left:50%;transform:translateX(-50%);
+  font-size:20px;filter:drop-shadow(0 1px 1px #000);
 }
-.btd-side-actions{display:flex;gap:6px;margin-top:6px}
+.btd-side-actions{display:flex;gap:10px;margin-top:8px}
 .btd-side-actions button{
-  flex:1;height:42px;border-radius:12px;border:2px solid rgba(0,0,0,.2);cursor:pointer;
-  font-size:18px;font-weight:900;color:#fff;
-  box-shadow:inset 0 2px 0 rgba(255,255,255,.35),0 3px 0 rgba(0,0,0,.25);
+  flex:1;height:52px;border-radius:14px;border:2px solid rgba(0,0,0,.2);cursor:pointer;
+  font-size:22px;font-weight:900;color:#fff;
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.35),0 4px 0 rgba(0,0,0,.25);
   transition:transform .12s;
 }
 .btd-side-actions button:hover{transform:scale(1.06)}
@@ -176,7 +190,7 @@ canvas{display:block;margin:0 auto;cursor:default;background:#0a0a14;position:re
 
 /* drag ghost */
 #dragGhost{
-  position:fixed;pointer-events:none;z-index:50;opacity:.75;width:64px;height:64px;
+  position:fixed;pointer-events:none;z-index:50;opacity:.75;width:88px;height:88px;
   display:none;transform:translate(-50%,-50%);
 }
 #dragGhost img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 4px 6px rgba(0,0,0,.45))}
@@ -201,10 +215,10 @@ canvas{display:block;margin:0 auto;cursor:default;background:#0a0a14;position:re
     </div>
     <div class="btd-dots" id="btdMapDots"></div>
     <div class="btd-diff-bar" id="btdDiffBar">
-      <button class="btd-diff beginner active" data-diff="0"><span class="medal">💧</span>BEGINNER</button>
-      <button class="btd-diff intermediate" data-diff="1"><span class="medal">🔥</span>INTERMEDIATE</button>
-      <button class="btd-diff advanced" data-diff="2"><span class="medal">🌋</span>ADVANCED</button>
-      <button class="btd-diff expert" data-diff="3"><span class="medal">💀</span>EXPERT</button>
+      <button class="btd-diff beginner active" data-diff="0"><span class="medal">💧</span>EASY · R40</button>
+      <button class="btd-diff intermediate" data-diff="1"><span class="medal">🔥</span>MEDIUM · R60</button>
+      <button class="btd-diff advanced" data-diff="2"><span class="medal">🌋</span>HARD · R100</button>
+      <button class="btd-diff expert" data-diff="3"><span class="medal">💀</span>EXPERT · R100</button>
     </div>
     <button class="btd-hero" id="btdHeroBtn" type="button">
       <img id="btdHeroImg" alt="hero" src="public/assets/ui/btd/tower-dart-monkey.png">
@@ -255,9 +269,12 @@ let loadProgress = 0, loadTotal = 1, loadError = null;
 // ─── GLOBALS ─────────────────────────────────────────────────
 let mouse = { x: 0, y: 0, down: false, clicked: false };
 let dt = 0, lastTime = 0, gameSpeed = 1, animT = 0;
-let lives = 150, cash = 650, round = 0, maxRounds = 60;
+let lives = 150, cash = 650, round = 0, maxRounds = 40;
 let selectedMap = 0, selectedDiff = 1;
 let placingTower = null, selectedTower = null;
+/** 'right' | 'left' — tower pick menu docks opposite the cursor */
+let sidebarSide = 'right';
+const SIDEBAR_CSS_W = 220; // matches --side-w max; used for placement margins
 let bloons = [], towers = [], projectiles = [], particles = [], floatTexts = [], firePatches = [], spriteAnims = [];
 let roundActive = false, spawnQueue = [], spawnTimer = 0;
 let autoStart = false, betweenRoundTimer = 0;
@@ -274,9 +291,14 @@ let muted = false, audioCtx = null;
 // ─── ASSET REGISTRY ──────────────────────────────────────────
 const IMG = {}; // key -> HTMLImageElement
 
+// Top-down body sprites (face UP). Pad is fixed; body rotates in place.
 const TOWER_SPRITE = {
   dart: 'towers/dart_monkey/idle.png',
   sniper: 'towers/sniper_monkey/idle.png',
+  ninja: 'towers/ninja_monkey/idle.png',
+  water: 'towers/water_monkey/idle.png',
+  boomer: 'towers/boomerang_monkey/idle.png',
+  glue: 'towers/glue_gunner/idle.png',
   bomb: 'towers/bomb_shooter/idle.png',
   ice: 'towers/ice_monkey/idle.png',
   wizard: 'towers/wizard_monkey/idle.png',
@@ -284,35 +306,29 @@ const TOWER_SPRITE = {
   super: 'towers/super_monkey/idle.png',
   tack: 'towers/tack_shooter/idle.png'
 };
-// Shared 2-frame idle for all character towers
-// 2-frame idle only for character monkeys (subtle bob). Mechanical towers
-// (bomb, tack) use a single stable sprite so weapons don't "swap".
-const TOWER_IDLE2 = {
-  dart: ['towers/dart_monkey/idle.png', 'towers/dart_monkey/idle_1.png'],
-  sniper: ['towers/sniper_monkey/idle.png', 'towers/sniper_monkey/idle_1.png'],
-  ice: ['towers/ice_monkey/idle.png', 'towers/ice_monkey/idle_1.png'],
-  farm: ['towers/banana_farm/idle.png', 'towers/banana_farm/idle_1.png'],
-  super: ['towers/super_monkey/idle.png', 'towers/super_monkey/idle_1.png']
+const TOWER_DIRS = {
+  dart: 'dart_monkey', sniper: 'sniper_monkey', ninja: 'ninja_monkey',
+  water: 'water_monkey', boomer: 'boomerang_monkey', glue: 'glue_gunner',
+  bomb: 'bomb_shooter', ice: 'ice_monkey', wizard: 'wizard_monkey',
+  farm: 'banana_farm', super: 'super_monkey', tack: 'tack_shooter'
 };
-// Wizard multi-frame animation
-const WIZARD_FRAMES = [
-  'towers/wizard_monkey/idle_0.png',
-  'towers/wizard_monkey/idle_1.png',
-  'towers/wizard_monkey/idle_2.png',
-  'towers/wizard_monkey/idle_3.png'
-];
-const WIZARD_ATTACK = [
-  'towers/wizard_monkey/attack_0.png',
-  'towers/wizard_monkey/attack_1.png',
-  'towers/wizard_monkey/attack_2.png'
-];
+const TOWER_ATTACK = {};
+const TOWER_PAD = {};
+const TOWER_IDLE2 = {};
+Object.keys(TOWER_SPRITE).forEach(k => {
+  const d = 'towers/' + TOWER_DIRS[k];
+  TOWER_ATTACK[k] = [d + '/attack_0.png', d + '/attack_1.png'];
+  TOWER_PAD[k] = d + '/pad.png';
+  TOWER_IDLE2[k] = [d + '/idle.png', d + '/idle_1.png'];
+});
 
 const BLOON_SPRITE = {
   red: 'bloons/red.png', blue: 'bloons/blue.png', green: 'bloons/green.png',
   yellow: 'bloons/yellow.png', pink: 'bloons/pink.png', purple: 'bloons/purple.png',
   black: 'bloons/black.png', white: 'bloons/white.png', lead: 'bloons/lead.png',
   zebra: 'bloons/zebra.png', rainbow: 'bloons/rainbow.png', ceramic: 'bloons/ceramic.png',
-  moab: 'bloons/moab.png', bfb: 'bloons/bfb.png', zomg: 'bloons/zomg.png'
+  moab: 'bloons/moab.png', bfb: 'bloons/bfb.png', zomg: 'bloons/zomg.png',
+  ddt: 'bloons/ddt.png', bad: 'bloons/bad.png'
 };
 
 const PROJ_SPRITE = {
@@ -321,7 +337,9 @@ const PROJ_SPRITE = {
   laser: 'effects/projectiles/laser.png', plasma: 'effects/projectiles/plasma.png',
   tack: 'effects/projectiles/tack.png', spike: 'effects/projectiles/spike.png',
   rocket: 'effects/projectiles/rocket.png', sniper: 'effects/projectiles/bullet.png',
-  fireball: 'effects/projectiles/flame1.png'
+  fireball: 'effects/projectiles/flame1.png', shuriken: 'effects/projectiles/shuriken.png',
+  water: 'effects/projectiles/water.png', glue: 'effects/projectiles/glue.png',
+  boomerang: 'effects/projectiles/boomerang.png'
 };
 
 const TILE_KEYS = {
@@ -355,11 +373,10 @@ function buildAssetList() {
   Object.entries(TOWER_IDLE2).forEach(([k, arr]) => {
     arr.forEach((v, i) => add('tower_' + k + '_f' + i, v));
   });
-  // Kenney machine overlays (CC0) used as bomb/tack sources
-  add('kenney_cannon', 'towers/bomb_shooter/kenney_cannon.png');
-  add('kenney_multi', 'towers/tack_shooter/kenney_multi.png');
-  WIZARD_FRAMES.forEach((v, i) => add('wizard_idle_' + i, v));
-  WIZARD_ATTACK.forEach((v, i) => add('wizard_atk_' + i, v));
+  Object.entries(TOWER_ATTACK).forEach(([k, arr]) => {
+    arr.forEach((v, i) => add('tower_' + k + '_atk' + i, v));
+  });
+  Object.entries(TOWER_PAD).forEach(([k, v]) => add('tower_' + k + '_pad', v));
   Object.entries(BLOON_SPRITE).forEach(([k, v]) => add('bloon_' + k, v));
   Object.entries(PROJ_SPRITE).forEach(([k, v]) => add('proj_' + k, v));
   Object.entries(TILE_KEYS).forEach(([k, v]) => add('tile_' + k, v));
@@ -415,36 +432,43 @@ function drawImgTL(key, x, y, w, h) {
 }
 
 // ─── DIFFICULTY / DEFS (gameplay) ────────────────────────────
+// Game modes: Easy→R40, Medium→R60, Hard→R100, Expert→R100 (tougher)
 const DIFFS = [
-  { name: 'Easy', lives: 200, cash: 650, speedMul: 0.85, color: '#4caf50', icon: '🟢' },
-  { name: 'Medium', lives: 150, cash: 600, speedMul: 1.0, color: '#ffc107', icon: '🟡' },
-  { name: 'Hard', lives: 100, cash: 500, speedMul: 1.2, color: '#f44336', icon: '🔴' },
-  { name: 'Impoppable', lives: 1, cash: 400, speedMul: 1.35, color: '#9c27b0', icon: '💀' }
+  { name: 'Easy', lives: 200, cash: 650, speedMul: 0.80, maxRounds: 40, cashMul: 1.0, color: '#4caf50', icon: '🟢', label: 'R1–40' },
+  { name: 'Medium', lives: 150, cash: 550, speedMul: 1.0, maxRounds: 60, cashMul: 0.9, color: '#ffc107', icon: '🟡', label: 'R1–60' },
+  { name: 'Hard', lives: 100, cash: 500, speedMul: 1.12, maxRounds: 100, cashMul: 0.8, color: '#f44336', icon: '🔴', label: 'R1–100' },
+  { name: 'Expert', lives: 80, cash: 450, speedMul: 1.25, maxRounds: 100, cashMul: 0.7, color: '#9c27b0', icon: '💀', label: 'R1–100+' }
 ];
 
+// Bloon layers inspired by BTD6. MOAB-class HP is high so bosses feel dangerous.
 const BLOON_TYPES = {
-  red:     { color: '#e53935', hp: 1,  speed: 1.0,  children: [],          rbe: 1,    cash: 1,  radius: 14 },
-  blue:    { color: '#1e88e5', hp: 1,  speed: 1.4,  children: ['red'],     rbe: 2,    cash: 1,  radius: 14 },
-  green:   { color: '#43a047', hp: 1,  speed: 1.8,  children: ['blue'],    rbe: 3,    cash: 1,  radius: 14 },
-  yellow:  { color: '#fdd835', hp: 1,  speed: 3.2,  children: ['green'],   rbe: 4,    cash: 1,  radius: 14 },
-  pink:    { color: '#ec407a', hp: 1,  speed: 3.5,  children: ['yellow'],  rbe: 5,    cash: 1,  radius: 15 },
-  purple:  { color: '#8e24aa', hp: 2,  speed: 2.5,  children: ['pink','pink'], rbe: 12, cash: 2, radius: 16, immune: ['magic'] },
-  black:   { color: '#212121', hp: 1,  speed: 1.8,  children: ['pink','pink'], rbe: 11, cash: 1, radius: 15, immune: ['bomb'] },
-  white:   { color: '#f5f5f5', hp: 1,  speed: 2.0,  children: ['pink','pink'], rbe: 11, cash: 1, radius: 15, immune: ['freeze'] },
-  lead:    { color: '#78909c', hp: 1,  speed: 1.0,  children: ['black','black'], rbe: 23, cash: 1, radius: 16, immune: ['sharp'] },
-  zebra:   { color: '#424242', hp: 1,  speed: 1.8,  children: ['black','white'], rbe: 23, cash: 2, radius: 16 },
-  rainbow: { color: '#ff00ff', hp: 1,  speed: 2.2,  children: ['zebra','zebra'], rbe: 47, cash: 2, radius: 17 },
-  ceramic: { color: '#a1887f', hp: 10, speed: 2.5,  children: ['rainbow','rainbow'], rbe: 104, cash: 10, radius: 18 },
-  moab:    { color: '#1565c0', hp: 200,  speed: 0.5,  children: ['ceramic','ceramic','ceramic','ceramic'], rbe: 616,   cash: 50,  radius: 36, moab: true },
-  bfb:     { color: '#c62828', hp: 700,  speed: 0.3,  children: ['moab','moab','moab','moab'], rbe: 3164,  cash: 100, radius: 48, moab: true },
-  zomg:    { color: '#2e7d32', hp: 4000, speed: 0.18, children: ['bfb','bfb','bfb','bfb'], rbe: 16656, cash: 250, radius: 60, moab: true }
+  red:     { color: '#e53935', hp: 1,  speed: 0.95, children: [], rbe: 1, cash: 1, radius: 14 },
+  blue:    { color: '#1e88e5', hp: 1,  speed: 1.3,  children: ['red'], rbe: 2, cash: 1, radius: 14 },
+  green:   { color: '#43a047', hp: 1,  speed: 1.65, children: ['blue'], rbe: 3, cash: 1, radius: 14 },
+  yellow:  { color: '#fdd835', hp: 1,  speed: 2.9,  children: ['green'], rbe: 4, cash: 1, radius: 14 },
+  pink:    { color: '#ec407a', hp: 1,  speed: 3.2,  children: ['yellow'], rbe: 5, cash: 1, radius: 15 },
+  purple:  { color: '#8e24aa', hp: 2,  speed: 2.3,  children: ['pink','pink'], rbe: 11, cash: 1, radius: 16, immune: ['magic'] },
+  black:   { color: '#212121', hp: 1,  speed: 1.7,  children: ['pink','pink'], rbe: 11, cash: 1, radius: 15, immune: ['bomb'] },
+  white:   { color: '#f5f5f5', hp: 1,  speed: 1.9,  children: ['pink','pink'], rbe: 11, cash: 1, radius: 15, immune: ['freeze'] },
+  lead:    { color: '#78909c', hp: 1,  speed: 0.95, children: ['black','black'], rbe: 23, cash: 1, radius: 16, immune: ['sharp'] },
+  zebra:   { color: '#424242', hp: 1,  speed: 1.7,  children: ['black','white'], rbe: 23, cash: 1, radius: 16 },
+  rainbow: { color: '#ff00ff', hp: 1,  speed: 2.0,  children: ['zebra','zebra'], rbe: 47, cash: 2, radius: 17 },
+  ceramic: { color: '#a1887f', hp: 18, speed: 2.2,  children: ['rainbow','rainbow'], rbe: 104, cash: 5, radius: 18 },
+  // MOAB class — hard shells, few cash, spawn layers (BTD6-style hierarchy)
+  moab: { color: '#1565c0', hp: 1800, speed: 0.42, children: ['ceramic','ceramic','ceramic','ceramic'], rbe: 616, cash: 25, radius: 38, moab: true },
+  bfb:  { color: '#c62828', hp: 6500, speed: 0.26, children: ['moab','moab','moab','moab'], rbe: 3164, cash: 50, radius: 50, moab: true },
+  zomg: { color: '#2e7d32', hp: 22000, speed: 0.15, children: ['bfb','bfb','bfb','bfb'], rbe: 16656, cash: 100, radius: 64, moab: true },
+  // DDT: fast camo + lead (sharp immune), moderate HP
+  ddt:  { color: '#4a148c', hp: 2400, speed: 0.95, children: ['ceramic','ceramic','ceramic','ceramic'], rbe: 816, cash: 40, radius: 36, moab: true, immune: ['sharp'], alwaysCamo: true },
+  // BAD: endgame boss
+  bad:  { color: '#6a1b9a', hp: 65000, speed: 0.10, children: ['zomg','zomg','ddt','ddt','ddt','moab','moab','moab'], rbe: 55760, cash: 250, radius: 78, moab: true }
 };
 
 const TOWER_DEFS = {
   dart: {
     name: 'Dart Monkey', icon: '🏹', cost: 200, range: 120, fireRate: 0.65, damage: 1, pierce: 1,
     projSpeed: 420, projType: 'dart', special: null, canPopLead: false, canPopFrozen: true, canPopPurple: true,
-    color: '#66bb6a', spriteSize: 56,
+    color: '#66bb6a', spriteSize: 58,
     upgrades: [
       { name: 'Sharp Shots', cost: 150, desc: '+1 pierce', changes: { pierce: 1 } },
       { name: 'Razordarts', cost: 300, desc: '+2 pierce, faster', changes: { pierce: 2, fireRate: -0.12 } },
@@ -459,6 +483,47 @@ const TOWER_DEFS = {
       { name: 'Full Metal Jacket', cost: 300, desc: 'Can pop Lead', changes: { canPopLead: true, damage: 1 } },
       { name: 'Large Calibre', cost: 500, desc: '+3 damage', changes: { damage: 3 } },
       { name: 'Deadly Precision', cost: 800, desc: 'Massive damage', changes: { damage: 8, fireRate: -0.2, canPopLead: true } }
+    ]
+  },
+  ninja: {
+    name: 'Ninja Monkey', icon: '🥷', cost: 500, range: 145, fireRate: 0.62, damage: 1, pierce: 2,
+    projSpeed: 500, projType: 'shuriken', special: null, canPopLead: false, canPopFrozen: true, canPopPurple: true,
+    canSeeCamo: true, color: '#37474f', spriteSize: 56,
+    upgrades: [
+      { name: 'Ninja Discipline', cost: 300, desc: 'Faster throwing', changes: { fireRate: -0.18 } },
+      { name: 'Sharp Shurikens', cost: 350, desc: '+2 pierce, +range', changes: { pierce: 2, range: 25 } },
+      { name: 'Seeking Shuriken', cost: 900, desc: 'Homes on camo & all', changes: { seeking: true, damage: 1, pierce: 1 } }
+    ]
+  },
+  water: {
+    name: 'Water Monkey', icon: '⚓', cost: 450, range: 155, fireRate: 0.75, damage: 1, pierce: 3,
+    projSpeed: 380, projType: 'water', special: null, canPopLead: false, canPopFrozen: true, canPopPurple: true,
+    color: '#29b6f6', spriteSize: 56,
+    upgrades: [
+      { name: 'Faster Firing', cost: 250, desc: 'Shoot quicker', changes: { fireRate: -0.2 } },
+      { name: 'Grape Shot', cost: 400, desc: '+2 pierce, +range', changes: { pierce: 2, range: 30 } },
+      { name: 'Cannon Ship', cost: 900, desc: 'AoE splash water', changes: { aoeRadius: 35, damage: 1, special: 'aoe' } }
+    ]
+  },
+  boomer: {
+    name: 'Boomerang', icon: '🪃', cost: 325, range: 135, fireRate: 0.85, damage: 1, pierce: 4,
+    projSpeed: 340, projType: 'boomerang', special: null, canPopLead: false, canPopFrozen: true, canPopPurple: true,
+    color: '#8d6e63', spriteSize: 56,
+    upgrades: [
+      { name: 'Improved Rangs', cost: 200, desc: '+2 pierce', changes: { pierce: 2 } },
+      { name: 'Glaives', cost: 350, desc: 'Faster + damage', changes: { fireRate: -0.2, damage: 1 } },
+      { name: 'Ricochet', cost: 800, desc: 'Massive pierce', changes: { pierce: 8, range: 20 } }
+    ]
+  },
+  glue: {
+    name: 'Glue Gunner', icon: '🧪', cost: 275, range: 110, fireRate: 1.1, damage: 0, pierce: 1,
+    projSpeed: 320, projType: 'glue', special: 'glue', glueSlow: 0.45, glueTime: 3.5,
+    canPopLead: false, canPopFrozen: true, canPopPurple: true,
+    color: '#9ccc65', spriteSize: 56,
+    upgrades: [
+      { name: 'Stickier Glue', cost: 200, desc: 'Slower & longer', changes: { glueSlow: 0.15, glueTime: 1.5 } },
+      { name: 'Glue Soak', cost: 350, desc: '+2 pierce', changes: { pierce: 2 } },
+      { name: 'Corrosive Glue', cost: 700, desc: 'Damages + melts', changes: { damage: 1, pierce: 2 } }
     ]
   },
   bomb: {
@@ -522,7 +587,7 @@ const TOWER_DEFS = {
     ]
   }
 };
-const TOWER_ORDER = ['dart', 'sniper', 'bomb', 'ice', 'wizard', 'farm', 'super', 'tack'];
+const TOWER_ORDER = ['dart', 'boomer', 'tack', 'sniper', 'ninja', 'water', 'glue', 'bomb', 'ice', 'wizard', 'farm', 'super'];
 
 // Paths use normalized 0–1 coords. Start/end stay inset so bloons enter/exit
 // on-screen at clear IN/OUT fort markers (never fly off the raw edge).
@@ -582,45 +647,112 @@ const MAPS = [
 ];
 
 function buildRounds() {
+  // BTD6-inspired: slow start, low density early, bosses later. Spacing (s) high = slower spawn.
   const R = [];
-  R[1]=[{t:'red',c:20,s:0.55}]; R[2]=[{t:'red',c:30,s:0.5}];
-  R[3]=[{t:'red',c:20,s:0.5},{t:'blue',c:5,s:0.55,d:2}];
-  R[4]=[{t:'red',c:30,s:0.45},{t:'blue',c:15,s:0.5,d:1}];
-  R[5]=[{t:'blue',c:25,s:0.45}]; R[6]=[{t:'green',c:10,s:0.5},{t:'blue',c:15,s:0.45,d:1}];
-  R[7]=[{t:'red',c:20,s:0.35},{t:'blue',c:20,s:0.4,d:1},{t:'green',c:10,s:0.5,d:2}];
-  R[8]=[{t:'green',c:25,s:0.4}]; R[9]=[{t:'blue',c:30,s:0.35},{t:'green',c:15,s:0.4,d:2}];
-  R[10]=[{t:'green',c:40,s:0.35}];
-  R[11]=[{t:'yellow',c:10,s:0.45},{t:'green',c:20,s:0.4,d:1}]; R[12]=[{t:'yellow',c:20,s:0.4}];
-  R[13]=[{t:'pink',c:8,s:0.45},{t:'yellow',c:15,s:0.4,d:1}];
-  R[14]=[{t:'pink',c:15,s:0.4},{t:'green',c:25,s:0.35,d:2}];
-  R[15]=[{t:'pink',c:20,s:0.35},{t:'yellow',c:20,s:0.35,d:1},{t:'blue',c:30,s:0.3,d:3}];
-  R[16]=[{t:'pink',c:25,s:0.3}]; R[17]=[{t:'yellow',c:30,s:0.3},{t:'pink',c:15,s:0.35,d:2}];
-  R[18]=[{t:'green',c:40,s:0.25},{t:'pink',c:20,s:0.3,d:2},{t:'pink',c:10,s:0.4,d:5,camo:true}];
-  R[19]=[{t:'pink',c:30,s:0.28},{t:'yellow',c:25,s:0.28,d:1}]; R[20]=[{t:'pink',c:40,s:0.25}];
-  R[21]=[{t:'black',c:6,s:0.5},{t:'pink',c:20,s:0.3,d:1}]; R[22]=[{t:'white',c:8,s:0.5},{t:'black',c:6,s:0.5,d:2}];
-  R[23]=[{t:'purple',c:5,s:0.55},{t:'pink',c:25,s:0.28,d:1}];
-  R[24]=[{t:'black',c:12,s:0.4},{t:'white',c:10,s:0.4,d:1},{t:'black',c:5,s:0.5,d:4,camo:true}];
-  R[25]=[{t:'purple',c:10,s:0.45},{t:'black',c:10,s:0.4,d:2}]; R[26]=[{t:'white',c:15,s:0.35},{t:'purple',c:8,s:0.4,d:1}];
-  R[27]=[{t:'black',c:15,s:0.35},{t:'white',c:15,s:0.35,d:1},{t:'pink',c:20,s:0.25,d:3}];
-  R[28]=[{t:'purple',c:15,s:0.35}]; R[29]=[{t:'black',c:20,s:0.3},{t:'white',c:20,s:0.3,d:1}];
-  R[30]=[{t:'purple',c:20,s:0.3},{t:'black',c:15,s:0.3,d:2}];
-  R[31]=[{t:'lead',c:4,s:0.6},{t:'black',c:15,s:0.3,d:1}]; R[32]=[{t:'zebra',c:6,s:0.5},{t:'pink',c:30,s:0.25,d:1}];
-  R[33]=[{t:'lead',c:8,s:0.5},{t:'zebra',c:6,s:0.45,d:2},{t:'zebra',c:4,s:0.5,d:4,camo:true}];
-  R[34]=[{t:'rainbow',c:4,s:0.55},{t:'zebra',c:8,s:0.4,d:1}]; R[35]=[{t:'lead',c:12,s:0.4},{t:'rainbow',c:5,s:0.5,d:2}];
-  R[36]=[{t:'zebra',c:15,s:0.35},{t:'purple',c:15,s:0.3,d:1}]; R[37]=[{t:'rainbow',c:10,s:0.4},{t:'lead',c:10,s:0.4,d:2}];
-  R[38]=[{t:'zebra',c:20,s:0.3},{t:'rainbow',c:8,s:0.35,d:1}]; R[39]=[{t:'rainbow',c:15,s:0.3},{t:'lead',c:15,s:0.35,d:2}];
-  R[40]=[{t:'moab',c:1,s:0},{t:'ceramic',c:8,s:0.5,d:5}];
-  R[41]=[{t:'ceramic',c:10,s:0.45},{t:'rainbow',c:15,s:0.3,d:2}]; R[42]=[{t:'ceramic',c:15,s:0.4},{t:'ceramic',c:5,s:0.5,d:5,camo:true}];
-  R[43]=[{t:'moab',c:1,s:0},{t:'ceramic',c:12,s:0.4,d:3}]; R[44]=[{t:'ceramic',c:20,s:0.35},{t:'rainbow',c:20,s:0.28,d:2}];
-  R[45]=[{t:'moab',c:2,s:3},{t:'ceramic',c:15,s:0.35,d:5}]; R[46]=[{t:'ceramic',c:25,s:0.3}];
-  R[47]=[{t:'moab',c:2,s:2},{t:'lead',c:20,s:0.3,d:3}]; R[48]=[{t:'ceramic',c:30,s:0.28},{t:'rainbow',c:25,s:0.25,d:2}];
-  R[49]=[{t:'moab',c:3,s:2}]; R[50]=[{t:'bfb',c:1,s:0},{t:'moab',c:2,s:3,d:8},{t:'ceramic',c:20,s:0.3,d:5}];
-  R[51]=[{t:'ceramic',c:40,s:0.25},{t:'moab',c:2,s:2,d:5}]; R[52]=[{t:'bfb',c:1,s:0},{t:'ceramic',c:30,s:0.25,d:4}];
-  R[53]=[{t:'moab',c:4,s:1.5},{t:'bfb',c:1,s:0,d:10}]; R[54]=[{t:'ceramic',c:50,s:0.22},{t:'rainbow',c:40,s:0.2,d:2}];
-  R[55]=[{t:'bfb',c:2,s:4},{t:'moab',c:3,s:2,d:5}]; R[56]=[{t:'ceramic',c:60,s:0.2},{t:'moab',c:4,s:1.5,d:3}];
-  R[57]=[{t:'bfb',c:3,s:3},{t:'ceramic',c:40,s:0.2,d:4}]; R[58]=[{t:'moab',c:6,s:1},{t:'bfb',c:2,s:3,d:8}];
-  R[59]=[{t:'bfb',c:3,s:2},{t:'ceramic',c:50,s:0.18,d:3}];
-  R[60]=[{t:'zomg',c:1,s:0},{t:'bfb',c:2,s:4,d:10},{t:'moab',c:4,s:2,d:15},{t:'ceramic',c:30,s:0.2,d:5}];
+  // ── Early game (1–20): gentle, learn towers ──
+  R[1]=[{t:'red',c:10,s:1.0}];
+  R[2]=[{t:'red',c:15,s:0.95}];
+  R[3]=[{t:'red',c:12,s:0.9},{t:'blue',c:3,s:1.0,d:3}];
+  R[4]=[{t:'red',c:18,s:0.85},{t:'blue',c:6,s:0.95,d:2}];
+  R[5]=[{t:'blue',c:12,s:0.9}];
+  R[6]=[{t:'blue',c:15,s:0.85},{t:'green',c:4,s:1.0,d:2}];
+  R[7]=[{t:'red',c:15,s:0.75},{t:'blue',c:10,s:0.85,d:1},{t:'green',c:5,s:0.95,d:3}];
+  R[8]=[{t:'green',c:12,s:0.85}];
+  R[9]=[{t:'blue',c:18,s:0.75},{t:'green',c:8,s:0.85,d:2}];
+  R[10]=[{t:'green',c:18,s:0.75}];
+  R[11]=[{t:'green',c:12,s:0.7},{t:'yellow',c:4,s:0.95,d:2}];
+  R[12]=[{t:'yellow',c:8,s:0.85}];
+  R[13]=[{t:'yellow',c:10,s:0.8},{t:'pink',c:3,s:1.0,d:2}];
+  R[14]=[{t:'pink',c:6,s:0.9},{t:'green',c:12,s:0.7,d:1}];
+  R[15]=[{t:'yellow',c:12,s:0.75},{t:'pink',c:6,s:0.85,d:2}];
+  R[16]=[{t:'pink',c:10,s:0.75}];
+  R[17]=[{t:'pink',c:12,s:0.7},{t:'yellow',c:10,s:0.7,d:1}];
+  R[18]=[{t:'green',c:20,s:0.55},{t:'pink',c:8,s:0.75,d:2}]; // first camo teaser next
+  R[19]=[{t:'pink',c:14,s:0.65},{t:'yellow',c:12,s:0.65,d:1}];
+  R[20]=[{t:'pink',c:16,s:0.6},{t:'pink',c:4,s:0.9,d:4,camo:true}];
+  // ── Mid (21–40): specials + first MOAB on 40 ──
+  R[21]=[{t:'black',c:4,s:0.9},{t:'pink',c:12,s:0.65,d:1}];
+  R[22]=[{t:'white',c:4,s:0.9},{t:'black',c:4,s:0.9,d:2}];
+  R[23]=[{t:'purple',c:3,s:1.0},{t:'pink',c:12,s:0.6,d:1}];
+  R[24]=[{t:'black',c:8,s:0.75},{t:'white',c:6,s:0.8,d:1},{t:'black',c:3,s:1.0,d:4,camo:true}];
+  R[25]=[{t:'purple',c:6,s:0.85},{t:'black',c:6,s:0.75,d:2}];
+  R[26]=[{t:'white',c:10,s:0.7},{t:'purple',c:5,s:0.85,d:1}];
+  R[27]=[{t:'black',c:10,s:0.65},{t:'white',c:8,s:0.7,d:1}];
+  R[28]=[{t:'purple',c:10,s:0.7}];
+  R[29]=[{t:'black',c:12,s:0.6},{t:'white',c:12,s:0.6,d:1}];
+  R[30]=[{t:'lead',c:3,s:1.0},{t:'purple',c:8,s:0.7,d:2}];
+  R[31]=[{t:'lead',c:4,s:0.9},{t:'black',c:10,s:0.6,d:1}];
+  R[32]=[{t:'zebra',c:4,s:0.85},{t:'pink',c:15,s:0.55,d:1}];
+  R[33]=[{t:'lead',c:6,s:0.8},{t:'zebra',c:4,s:0.85,d:2},{t:'zebra',c:2,s:1.0,d:5,camo:true}];
+  R[34]=[{t:'rainbow',c:3,s:0.95},{t:'zebra',c:5,s:0.75,d:1}];
+  R[35]=[{t:'lead',c:8,s:0.7},{t:'rainbow',c:3,s:0.9,d:2}];
+  R[36]=[{t:'zebra',c:8,s:0.65},{t:'purple',c:8,s:0.65,d:1}];
+  R[37]=[{t:'rainbow',c:6,s:0.75},{t:'lead',c:6,s:0.75,d:2}];
+  R[38]=[{t:'ceramic',c:3,s:1.0},{t:'rainbow',c:6,s:0.7,d:2}];
+  R[39]=[{t:'ceramic',c:5,s:0.9},{t:'rainbow',c:8,s:0.65,d:1}];
+  R[40]=[{t:'moab',c:1,s:0},{t:'ceramic',c:4,s:0.9,d:6}]; // Easy ends here
+  // ── Late mid (41–60): MOABs / first BFB ──
+  R[41]=[{t:'ceramic',c:6,s:0.8},{t:'rainbow',c:10,s:0.6,d:2}];
+  R[42]=[{t:'ceramic',c:8,s:0.75},{t:'ceramic',c:3,s:1.0,d:4,camo:true}];
+  R[43]=[{t:'moab',c:1,s:0},{t:'ceramic',c:6,s:0.8,d:4}];
+  R[44]=[{t:'ceramic',c:10,s:0.65},{t:'rainbow',c:12,s:0.55,d:2}];
+  R[45]=[{t:'moab',c:1,s:0},{t:'ceramic',c:8,s:0.7,d:5}];
+  R[46]=[{t:'ceramic',c:12,s:0.6}];
+  R[47]=[{t:'moab',c:1,s:0},{t:'lead',c:12,s:0.55,d:3}];
+  R[48]=[{t:'ceramic',c:14,s:0.55},{t:'rainbow',c:12,s:0.5,d:2}];
+  R[49]=[{t:'moab',c:2,s:4}];
+  R[50]=[{t:'bfb',c:1,s:0},{t:'ceramic',c:10,s:0.65,d:8}]; // Medium ends ~here with ZOMG at 60
+  R[51]=[{t:'ceramic',c:16,s:0.5},{t:'moab',c:1,s:0,d:6}];
+  R[52]=[{t:'bfb',c:1,s:0},{t:'ceramic',c:12,s:0.55,d:5}];
+  R[53]=[{t:'moab',c:2,s:3},{t:'bfb',c:1,s:0,d:12}];
+  R[54]=[{t:'ceramic',c:20,s:0.45},{t:'rainbow',c:20,s:0.4,d:2}];
+  R[55]=[{t:'bfb',c:1,s:0},{t:'moab',c:2,s:4,d:6}];
+  R[56]=[{t:'ceramic',c:22,s:0.42},{t:'moab',c:2,s:3,d:4}];
+  R[57]=[{t:'bfb',c:2,s:6},{t:'ceramic',c:15,s:0.45,d:4}];
+  R[58]=[{t:'moab',c:3,s:2.5},{t:'bfb',c:1,s:0,d:8}];
+  R[59]=[{t:'bfb',c:2,s:4},{t:'ceramic',c:18,s:0.4,d:3}];
+  R[60]=[{t:'zomg',c:1,s:0},{t:'bfb',c:1,s:0,d:12},{t:'moab',c:2,s:3,d:16}];
+  // ── Late (61–100): DDT, multi-BFB, BAD ──
+  R[61]=[{t:'ceramic',c:25,s:0.38},{t:'moab',c:2,s:2.5,d:4}];
+  R[62]=[{t:'ddt',c:1,s:0},{t:'ceramic',c:12,s:0.5,d:5}]; // DDT intro
+  R[63]=[{t:'bfb',c:2,s:5},{t:'moab',c:2,s:3,d:4}];
+  R[64]=[{t:'ddt',c:1,s:0},{t:'ceramic',c:15,s:0.45,d:3,camo:true}];
+  R[65]=[{t:'zomg',c:1,s:0},{t:'ceramic',c:20,s:0.4,d:8}];
+  R[66]=[{t:'bfb',c:2,s:4},{t:'ddt',c:1,s:0,d:10}];
+  R[67]=[{t:'moab',c:4,s:2},{t:'ceramic',c:20,s:0.38,d:3}];
+  R[68]=[{t:'ddt',c:2,s:5},{t:'bfb',c:1,s:0,d:6}];
+  R[69]=[{t:'zomg',c:1,s:0},{t:'bfb',c:2,s:5,d:10}];
+  R[70]=[{t:'ddt',c:2,s:4},{t:'moab',c:3,s:2.5,d:4}];
+  R[71]=[{t:'ceramic',c:30,s:0.32},{t:'bfb',c:2,s:4,d:5}];
+  R[72]=[{t:'zomg',c:1,s:0},{t:'ddt',c:2,s:4,d:8}];
+  R[73]=[{t:'bfb',c:3,s:3.5},{t:'moab',c:3,s:2,d:4}];
+  R[74]=[{t:'ddt',c:3,s:3},{t:'ceramic',c:25,s:0.35,d:3}];
+  R[75]=[{t:'zomg',c:1,s:0},{t:'bfb',c:2,s:4,d:8},{t:'ddt',c:1,s:0,d:14}];
+  R[76]=[{t:'moab',c:5,s:1.8},{t:'bfb',c:2,s:3.5,d:5}];
+  R[77]=[{t:'ddt',c:3,s:2.5},{t:'zomg',c:1,s:0,d:10}];
+  R[78]=[{t:'bfb',c:3,s:3},{t:'ceramic',c:30,s:0.3,d:3}];
+  R[79]=[{t:'zomg',c:2,s:8},{t:'ddt',c:2,s:3,d:6}];
+  R[80]=[{t:'bad',c:1,s:0}]; // BAD debut
+  R[81]=[{t:'ceramic',c:40,s:0.28},{t:'moab',c:4,s:1.5,d:3}];
+  R[82]=[{t:'ddt',c:4,s:2},{t:'bfb',c:2,s:3,d:5}];
+  R[83]=[{t:'zomg',c:2,s:6},{t:'ddt',c:2,s:2.5,d:5}];
+  R[84]=[{t:'bfb',c:4,s:2.5},{t:'moab',c:4,s:1.5,d:3}];
+  R[85]=[{t:'bad',c:1,s:0},{t:'ddt',c:2,s:3,d:15}];
+  R[86]=[{t:'zomg',c:2,s:5},{t:'bfb',c:3,s:2.5,d:4}];
+  R[87]=[{t:'ddt',c:5,s:1.8},{t:'ceramic',c:35,s:0.28,d:2}];
+  R[88]=[{t:'bad',c:1,s:0},{t:'zomg',c:1,s:0,d:12}];
+  R[89]=[{t:'bfb',c:4,s:2},{t:'ddt',c:3,s:2,d:4}];
+  R[90]=[{t:'zomg',c:3,s:4},{t:'ddt',c:3,s:2,d:5}];
+  R[91]=[{t:'bad',c:1,s:0},{t:'bfb',c:2,s:3,d:10}];
+  R[92]=[{t:'ddt',c:6,s:1.5},{t:'moab',c:5,s:1.2,d:2}];
+  R[93]=[{t:'zomg',c:3,s:3.5},{t:'bfb',c:3,s:2,d:4}];
+  R[94]=[{t:'bad',c:1,s:0},{t:'ddt',c:4,s:1.8,d:12}];
+  R[95]=[{t:'zomg',c:3,s:3},{t:'ddt',c:4,s:1.5,d:4}];
+  R[96]=[{t:'bfb',c:5,s:1.8},{t:'moab',c:6,s:1.0,d:2}];
+  R[97]=[{t:'bad',c:1,s:0},{t:'zomg',c:2,s:4,d:10}];
+  R[98]=[{t:'ddt',c:6,s:1.2},{t:'zomg',c:2,s:3,d:5}];
+  R[99]=[{t:'bad',c:1,s:0},{t:'ddt',c:4,s:1.5,d:8},{t:'bfb',c:3,s:2,d:14}];
+  R[100]=[{t:'bad',c:2,s:10},{t:'zomg',c:2,s:4,d:8},{t:'ddt',c:4,s:1.5,d:12},{t:'bfb',c:3,s:2,d:16}];
   return R;
 }
 const ROUNDS = buildRounds();
@@ -757,8 +889,9 @@ function createBloon(type, pathIdx, progress, camo) {
   if (!def) return null;
   return {
     type, pathIdx: pathIdx||0, progress: progress||0,
-    hp: def.hp, maxHp: def.hp, camo: !!camo,
+    hp: def.hp, maxHp: def.hp, camo: !!(camo || def.alwaysCamo),
     frozen: 0, freezeSlow: 1, permafrost: 0,
+    glueSlow: 1, glueTime: 0,
     x: 0, y: 0, alive: true, rbe: def.rbe,
     wobble: Math.random() * Math.PI * 2, propAngle: 0
   };
@@ -775,7 +908,7 @@ function damageBloon(b, dmg, source) {
     if (def.immune) {
       if (def.immune.includes('bomb') && source.projType === 'bomb') return false;
       if (def.immune.includes('magic') && (source.projType === 'magic' || source.projType === 'laser' || source.projType === 'plasma')) return false;
-      if (def.immune.includes('sharp') && !source.canPopLead && ['dart','tack','spike','sniper'].includes(source.projType)) return false;
+      if (def.immune.includes('sharp') && !source.canPopLead && ['dart','tack','spike','sniper','shuriken','boomerang','water'].includes(source.projType)) return false;
       if (def.immune.includes('freeze') && source.projType === 'freeze') return false;
     }
     if (b.frozen > 0 && !source.canPopFrozen && source.projType !== 'freeze') return false;
@@ -791,15 +924,23 @@ function popBloon(b) {
   if (!b.alive) return;
   b.alive = false;
   const def = BLOON_TYPES[b.type];
-  cash += def.cash; totalPopped++;
+  const cashMul = (DIFFS[selectedDiff] && DIFFS[selectedDiff].cashMul) || 1;
+  const gained = Math.max(0, Math.floor(def.cash * cashMul));
+  cash += gained; totalPopped++;
   if (def.moab) { spawnExplosion(b.x, b.y, def.radius); sfx('explode'); }
   else { spawnPop(b.x, b.y); sfx('pop'); }
-  spawnFloat(b.x, b.y - 10, '+$' + def.cash, '#ffd700');
+  if (gained > 0) spawnFloat(b.x, b.y - 10, '+$' + gained, '#ffd700');
   const children = def.children;
   if (children && children.length) {
     children.forEach((ct, i) => {
-      const child = createBloon(ct, b.pathIdx, Math.max(0, b.progress - i * 0.008), b.camo);
-      if (child) { if (b.permafrost > 0) child.permafrost = b.permafrost; bloons.push(child); }
+      // DDT/alwaysCamo children keep camo; normal camo parents pass camo
+      const childCamo = b.camo || !!(BLOON_TYPES[ct] && BLOON_TYPES[ct].alwaysCamo);
+      const child = createBloon(ct, b.pathIdx, Math.max(0, b.progress - i * 0.008), childCamo);
+      if (child) {
+        if (b.permafrost > 0) child.permafrost = b.permafrost;
+        if (b.glueTime > 0) { child.glueTime = b.glueTime * 0.5; child.glueSlow = b.glueSlow; }
+        bloons.push(child);
+      }
     });
   }
 }
@@ -821,7 +962,9 @@ function createTower(type, x, y) {
     canPopLead: def.canPopLead, canPopFrozen: def.canPopFrozen, canPopPurple: def.canPopPurple,
     canSeeCamo: !!def.canSeeCamo, aoeRadius: def.aoeRadius || 0, freezeTime: def.freezeTime || 0,
     income: def.income || 0, tackCount: def.tackCount || 8, moabMul: 1,
+    glueSlow: def.glueSlow || 0.5, glueTime: def.glueTime || 3,
     fireball: false, wallOfFire: false, arctic: false, permafrost: false, sunAvatar: false,
+    seeking: !!def.seeking,
     upgradeLevel: 0, targeting: 'first',
     cooldown: 0, angle: 0, aimAngle: 0, totalCost: def.cost,
     shootKick: 0, shootFlash: 0, wallCD: 0, spriteSize: def.spriteSize || 52
@@ -861,6 +1004,10 @@ function applyUpgrade(tower) {
   if (c.permafrost) tower.permafrost = true;
   if (c.arctic) tower.arctic = true;
   if (c.sunAvatar) tower.sunAvatar = true;
+  if (c.seeking) tower.seeking = true;
+  if (c.glueSlow) tower.glueSlow = Math.max(0.15, (tower.glueSlow || 0.5) - c.glueSlow);
+  if (c.glueTime) tower.glueTime = (tower.glueTime || 3) + c.glueTime;
+  if (c.special) tower.special = c.special;
   sfx('upgrade');
   spawnSpriteAnim('fx_magic_', 6, tower.x, tower.y, 60, 14);
   return true;
@@ -895,7 +1042,10 @@ function makeProj(tower, x, y, vx, vy, target) {
     projType: tower.projType, aoeRadius: tower.aoeRadius || 0,
     canPopLead: tower.canPopLead, canPopFrozen: tower.canPopFrozen,
     canPopPurple: tower.canPopPurple, canSeeCamo: tower.canSeeCamo,
-    moabMul: tower.moabMul, life: 2.5, r: 5, source: tower
+    moabMul: tower.moabMul,
+    glueSlow: tower.glueSlow || 0.5, glueTime: tower.glueTime || 3,
+    special: tower.special,
+    life: 2.5, r: 5, source: tower
   };
 }
 function fireTower(tower, target) {
@@ -940,7 +1090,7 @@ function fireTower(tower, target) {
     particles.push({ x: tower.x, y: tower.y, x2: target.x, y2: target.y, life: 0.08, maxLife: 0.08, color: '#fff59d', type: 'line' });
     return;
   }
-  const isHoming = ['magic','laser','plasma'].includes(tower.projType);
+  const isHoming = ['magic','laser','plasma'].includes(tower.projType) || !!tower.seeking;
   const d = dist(tower.x, tower.y, target.x, target.y) || 1;
   const vx = (target.x - tower.x) / d * tower.projSpeed;
   const vy = (target.y - tower.y) / d * tower.projSpeed;
@@ -956,15 +1106,73 @@ function fireTower(tower, target) {
   }
 }
 
+/** Sidebar width in game coordinates (DOM px → canvas logical). */
+function sidebarGameW() {
+  const s = scale > 0.01 ? scale : 1;
+  return Math.ceil(SIDEBAR_CSS_W / s) + 12;
+}
+/** True if game-point is under the docked tower menu (viewport-based). */
+function overSidebar(x) {
+  const r = canvas.getBoundingClientRect();
+  const screenX = r.left + ox + x * scale;
+  const pad = 8;
+  if (sidebarSide === 'right') return screenX > window.innerWidth - SIDEBAR_CSS_W - pad;
+  return screenX < SIDEBAR_CSS_W + pad;
+}
 function canPlace(x, y) {
-  // Leave room for BTD right sidebar (~108px)
-  if (y < 55 || y > H - 30 || x < 20 || x > W - 120) return false;
+  // Leave room for the docked BTD sidebar (may overhang map)
+  if (y < 55 || y > H - 30) return false;
+  if (overSidebar(x)) return false;
+  if (x < 16 || x > W - 16) return false;
   for (const p of gamePaths) if (distToPath(x, y, p) < 32) return false;
   for (const t of towers) if (dist(x, y, t.x, t.y) < 40) return false;
   const map = MAPS[selectedMap];
   if (map.name === 'Tree Stump' && dist(x, y, W*0.5, (H-140)*0.5+50) < 55) return false;
   if (map.name === 'Frozen Lake' && dist(x, y, W*0.5, (H-140)*0.4+50) < 70) return false;
   return true;
+}
+/**
+ * Dock menu opposite the cursor ONLY while placing a tower (ghost hover).
+ * Default / anytime not placing → fixed on the right.
+ */
+function updateSidebarDock() {
+  if (gameState !== State.GAMEPLAY && gameState !== State.PAUSE) {
+    if (sidebarSide !== 'right') {
+      sidebarSide = 'right';
+      applySidebarDock();
+    }
+    return;
+  }
+  // Not placing → stay parked on the right
+  if (!placingTower) {
+    if (sidebarSide !== 'right') {
+      sidebarSide = 'right';
+      applySidebarDock();
+    }
+    return;
+  }
+  // Placing: flip only when cursor is clearly on one half (hysteresis)
+  // cursor left → menu right (default free left); cursor right → menu left (free right)
+  let next = sidebarSide;
+  if (mouse.x < W * 0.42) next = 'right';
+  else if (mouse.x > W * 0.58) next = 'left';
+  if (next !== sidebarSide) {
+    sidebarSide = next;
+    applySidebarDock();
+  }
+}
+function applySidebarDock() {
+  const sideEl = document.getElementById('btdSidebar');
+  if (!sideEl) return;
+  sideEl.classList.toggle('side-left', sidebarSide === 'left');
+  sideEl.classList.toggle('side-right', sidebarSide === 'right');
+}
+/** Canvas upgrade panel X next to the free side of the sidebar. */
+function towerPanelX() {
+  const sw = sidebarGameW();
+  const pw = 250;
+  if (sidebarSide === 'right') return Math.max(10, W - sw - pw - 12);
+  return Math.min(W - pw - 10, sw + 12);
 }
 
 // ─── MAP TILE CACHE (clean Kenney-style flat terrain) ────────
@@ -1130,12 +1338,14 @@ function drawDecoTo(g, type, x, y, terrain) {
 // ─── GAME FLOW ───────────────────────────────────────────────
 function startGame() {
   const d = DIFFS[selectedDiff];
-  lives = d.lives; cash = d.cash; round = 0; totalPopped = 0; totalSpent = 0;
+  lives = d.lives; cash = d.cash; maxRounds = d.maxRounds || 40;
+  round = 0; totalPopped = 0; totalSpent = 0;
   gameSpeed = 1; bloons = []; towers = []; projectiles = []; particles = [];
   floatTexts = []; firePatches = []; spriteAnims = [];
   roundWarnings = []; warnBanner = null;
   placingTower = null; selectedTower = null; roundActive = false; spawnQueue = [];
   betweenRoundTimer = 1.5;
+  sidebarSide = 'right';
   gamePaths = buildPath(MAPS[selectedMap]);
   pathMetricsArr = gamePaths.map(p => pathMetrics(p));
   try { buildMapCache(); } catch (e) { console.warn('map cache', e); mapCache = null; }
@@ -1144,12 +1354,14 @@ function startGame() {
   // force sidebar refresh next frame
   if (typeof btdLastState !== 'undefined') btdLastState = null;
   if (typeof btdLastCash !== 'undefined') btdLastCash = -1;
+  applySidebarDock();
 }
 function roundThreats(r) {
   const waves = ROUNDS[r] || [];
   return {
-    camo: waves.some(w => w.camo),
-    lead: waves.some(w => w.t === 'lead')
+    camo: waves.some(w => w.camo || w.t === 'ddt' || (BLOON_TYPES[w.t] && BLOON_TYPES[w.t].alwaysCamo)),
+    lead: waves.some(w => w.t === 'lead' || w.t === 'ddt'),
+    moab: waves.some(w => BLOON_TYPES[w.t] && BLOON_TYPES[w.t].moab)
   };
 }
 function pushWarning(text, color, life) {
@@ -1157,8 +1369,9 @@ function pushWarning(text, color, life) {
 }
 function announceThreatsForRound(r, asNext) {
   const t = roundThreats(r);
-  if (!t.camo && !t.lead) { warnBanner = null; return; }
+  if (!t.camo && !t.lead && !t.moab) { warnBanner = null; return; }
   const parts = [];
+  if (t.moab) parts.push('MOAB-CLASS');
   if (t.camo) parts.push('CAMO / TARN');
   if (t.lead) parts.push('LEAD / BLEI');
   const prefix = asNext ? ('⚠ Nächste Runde (' + r + '): ') : ('⚠ Runde ' + r + ': ');
@@ -1188,23 +1401,25 @@ function startRound() {
 }
 function endRound() {
   roundActive = false;
-  const bonus = 100 + round;
+  // BTD-like end-of-round bonus: modest early, scales slowly (cashMul by difficulty)
+  const cashMul = (DIFFS[selectedDiff] && DIFFS[selectedDiff].cashMul) || 1;
+  const bonus = Math.floor((50 + round * 2) * cashMul);
   cash += bonus;
-  spawnFloat(W/2, 100, '+$' + bonus + ' round income', '#ffd700');
+  spawnFloat(W/2, 100, '+$' + bonus + ' round', '#ffd700');
   for (const t of towers) {
     if (t.special === 'income' && t.income > 0) {
-      cash += t.income;
-      spawnFloat(t.x, t.y - 20, '+$' + t.income, '#ffeb3b');
+      const inc = Math.floor(t.income * cashMul);
+      cash += inc;
+      spawnFloat(t.x, t.y - 20, '+$' + inc, '#ffeb3b');
     }
   }
   sfx('cash');
   if (round >= maxRounds) { winGame(); return; }
-  betweenRoundTimer = 1.0;
-  // ONE ROUND AHEAD: warn about camo / lead in the upcoming round
+  betweenRoundTimer = 1.2;
   const next = round + 1;
   if (next <= maxRounds) {
     const nxt = roundThreats(next);
-    if (nxt.camo || nxt.lead) announceThreatsForRound(next, true);
+    if (nxt.camo || nxt.lead || nxt.moab) announceThreatsForRound(next, true);
   }
 }
 function winGame() {
@@ -1261,9 +1476,14 @@ function updateGameplay(t, diff) {
     const def = BLOON_TYPES[b.type];
     const pm = pathMetricsArr[b.pathIdx] || pathMetricsArr[0];
     const pts = gamePaths[b.pathIdx] || gamePaths[0];
-    let speed = def.speed * 55 * diff.speedMul;
+    let speed = def.speed * 52 * diff.speedMul;
+    if (b.glueTime > 0) { b.glueTime -= t; if (b.glueTime <= 0) b.glueSlow = 1; }
     if (b.frozen > 0) { b.frozen -= t; speed = 0; }
-    else { speed *= (1 - (b.permafrost || 0)); speed *= b.freezeSlow || 1; }
+    else {
+      speed *= (1 - (b.permafrost || 0));
+      speed *= b.freezeSlow || 1;
+      if (b.glueTime > 0) speed *= (b.glueSlow || 1);
+    }
     b.progress += (speed * t) / pm.total;
     b.wobble += t * 8;
     if (def.moab) b.propAngle += t * 10;
@@ -1344,12 +1564,21 @@ function updateGameplay(t, diff) {
       const br = BLOON_TYPES[b.type].radius;
       if (dist2(p.x, p.y, b.x, b.y) < (br + p.r) * (br + p.r)) {
         p.hit.push(b);
-        if (p.projType === 'bomb' || p.projType === 'fireball') {
+        if (p.projType === 'bomb' || p.projType === 'fireball' || (p.projType === 'water' && p.aoeRadius > 0)) {
           const ar = p.aoeRadius || 40;
           for (const b2 of bloons) {
-            if (b2.alive && dist2(p.x, p.y, b2.x, b2.y) < ar * ar) damageBloon(b2, p.damage, p);
+            if (b2.alive && dist2(p.x, p.y, b2.x, b2.y) < ar * ar) damageBloon(b2, Math.max(1, p.damage), p);
           }
-          spawnExplosion(p.x, p.y, ar); sfx('explode'); hit = true; break;
+          spawnExplosion(p.x, p.y, ar); sfx(p.projType === 'water' ? 'pop' : 'explode'); hit = true; break;
+        } else if (p.projType === 'glue') {
+          // Slow (and optional damage) — does not pop MOABs hard
+          if (!BLOON_TYPES[b.type].moab) {
+            b.glueSlow = Math.min(b.glueSlow || 1, p.glueSlow || 0.5);
+            b.glueTime = Math.max(b.glueTime || 0, p.glueTime || 3);
+          }
+          if (p.damage > 0) damageBloon(b, p.damage, p);
+          p.pierce--;
+          if (p.pierce <= 0) { hit = true; break; }
         } else {
           damageBloon(b, p.damage, p); p.pierce--;
           if (p.pierce <= 0) { hit = true; break; }
@@ -1361,10 +1590,12 @@ function updateGameplay(t, diff) {
 }
 
 // ─── INPUT ───────────────────────────────────────────────────
-canvas.addEventListener('mousemove', e => {
+// Window-level mouse so docking works over canvas AND the DOM sidebar
+window.addEventListener('mousemove', e => {
   const r = canvas.getBoundingClientRect();
   const g = toGame(e.clientX - r.left, e.clientY - r.top);
   mouse.x = g.x; mouse.y = g.y;
+  updateSidebarDock();
 });
 canvas.addEventListener('mousedown', e => {
   ensureAudio();
@@ -1373,7 +1604,7 @@ canvas.addEventListener('mousedown', e => {
   mouse.x = g.x; mouse.y = g.y; mouse.down = true;
   if (e.button === 2) {
     // Right-click cancels placement / deselects tower
-    if (placingTower) { placingTower = null; sfx('click'); }
+    if (placingTower) { placingTower = null; updateSidebarDock(); sfx('click'); }
     else if (selectedTower) { selectedTower = null; sfx('click'); }
     return;
   }
@@ -1385,7 +1616,7 @@ window.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     if (gameState === State.GAMEPLAY) { gameState = State.PAUSE; sfx('click'); }
     else if (gameState === State.PAUSE) gameState = State.GAMEPLAY;
-    else if (placingTower) placingTower = null;
+    else if (placingTower) { placingTower = null; updateSidebarDock(); }
   }
   if (e.key === ' ' && gameState === State.GAMEPLAY) {
     e.preventDefault();
@@ -1426,16 +1657,19 @@ function handleClick() {
     return;
   }
   if (gameState === State.GAMEPLAY) {
-    if (hitBtn(W-50, 8, 40, 36)) { gameState = State.PAUSE; sfx('click'); return; }
-    if (hitBtn(W-150, 8, 40, 36)) { gameSpeed = gameSpeed >= 3 ? 1 : gameSpeed + 1; sfx('click'); return; }
-    if (hitBtn(W-250, 8, 80, 36)) {
-      if (!roundActive && bloons.filter(b=>b.alive).length === 0) startRound();
-      return;
+    {
+      const hudPad = (sidebarSide === 'right' ? sidebarGameW() + 12 : 16);
+      if (hitBtn(W - hudPad - 50, 8, 40, 36)) { gameState = State.PAUSE; sfx('click'); return; }
+      if (hitBtn(W - hudPad - 100, 8, 40, 36)) { gameSpeed = gameSpeed >= 3 ? 1 : gameSpeed + 1; sfx('click'); return; }
+      if (hitBtn(W - hudPad - 200, 8, 80, 36)) {
+        if (!roundActive && bloons.filter(b=>b.alive).length === 0) startRound();
+        return;
+      }
+      if (hitBtn(W - hudPad - 290, 8, 70, 36)) { autoStart = !autoStart; sfx('click'); return; }
     }
-    if (hitBtn(W-340, 8, 70, 36)) { autoStart = !autoStart; sfx('click'); return; }
-    // Tower pick: BTD right sidebar (DOM)
+    // Tower pick: BTD sidebar (DOM) + upgrade panel
     if (selectedTower) {
-      const px = W - 380, py = 60;
+      const px = towerPanelX(), py = 60;
       for (let u = 0; u < 3; u++) {
         if (hitBtn(px + 10, py + 160 + u * 55, 230, 50)) {
           if (selectedTower.upgradeLevel === u) applyUpgrade(selectedTower);
@@ -1460,7 +1694,7 @@ function handleClick() {
     }
     if (placingTower) {
       // Ignore clicks on sidebar strip
-      if (mx > W - 110) return;
+      if (overSidebar(mx)) return;
       if (my > 55 && my < H - 20) {
         if (canPlace(mx, my)) {
           const cost = TOWER_DEFS[placingTower].cost;
@@ -1470,6 +1704,7 @@ function handleClick() {
             sfx('place');
             spawnSpriteAnim('fx_magic_', 6, mx, my, 40, 16);
             if (cash < TOWER_DEFS[placingTower].cost) placingTower = null;
+            updateSidebarDock();
             if (typeof renderBtdTowerGrid === 'function') renderBtdTowerGrid();
           }
         }
@@ -1569,15 +1804,16 @@ function drawBloon(b) {
 }
 function drawTower(t, preview) {
   const def = TOWER_DEFS[t.type];
-  const size = t.spriteSize || def.spriteSize || 52;
-  // Facing: sprite art is drawn "up"; convert aim (0 = right) → canvas rotation
+  const size = t.spriteSize || def.spriteSize || 56;
+  // Facing: top-down sprites drawn facing UP; aim 0 = right → rot = aim + PI/2
   const aim = (t.aimAngle != null ? t.aimAngle : t.angle) || 0;
-  const canAim = !preview && towerCanAim(t.type);
-  // Recoil: pull sprite back along aim when shooting
-  const kick = (!preview && t.shootKick) ? t.shootKick * 6 : 0;
-  const dx = canAim ? -Math.cos(aim) * kick : 0;
-  const dy = canAim ? -Math.sin(aim) * kick : 0;
-  const px = t.x + dx, py = t.y + dy;
+  const canAim = towerCanAim(t.type);
+  const kickAmt = (!preview && t.shootKick) ? t.shootKick : 0;
+  // Recoil ONLY on body (pad stays fixed at tower.x/y)
+  const kickDist = (t.type === 'sniper' || t.type === 'bomb') ? 8 : 5;
+  const dx = (!preview && canAim) ? -Math.cos(aim) * kickAmt * kickDist : 0;
+  const dy = (!preview && canAim) ? -Math.sin(aim) * kickAmt * kickDist : 0;
+  const bx = t.x + dx, by = t.y + dy;
 
   // range ring
   if (selectedTower === t || preview) {
@@ -1587,74 +1823,94 @@ function drawTower(t, preview) {
     ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(t.x, t.y, t.range || def.range, 0, Math.PI*2); ctx.fill(); ctx.stroke();
   }
-  // grounded shadow (no float)
-  ctx.fillStyle = 'rgba(0,0,0,0.28)';
-  ctx.beginPath(); ctx.ellipse(t.x, t.y + size * 0.32, size * 0.3, size * 0.12, 0, 0, Math.PI*2); ctx.fill();
 
-  // Sprite key
-  let key = 'tower_' + t.type;
-  let drawSize = size + 6;
-  if (t.type === 'wizard' && !preview) {
-    const attacking = t.shootKick > 0.15 || (t.cooldown > 0 && t.cooldown > t.fireRate - 0.2);
-    if (attacking) {
-      const af = Math.min(2, Math.floor((1 - t.shootKick) * 3));
-      key = 'wizard_atk_' + af;
-    } else {
-      key = 'wizard_idle_0'; // static idle — no floating multi-frame bob
-    }
-    drawSize = size + 10;
+  // 1) Fixed ground shadow (anchor never moves)
+  ctx.fillStyle = 'rgba(0,0,0,0.30)';
+  ctx.beginPath();
+  ctx.ellipse(t.x, t.y + size * 0.18, size * 0.32, size * 0.14, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 2) Fixed base pad (does not rotate) — BTD-style platform
+  const padSize = size * 0.72;
+  if (!drawImg('tower_' + t.type + '_pad', t.x, t.y + 2, padSize, padSize, 0)) {
+    ctx.fillStyle = 'rgba(80,70,50,0.45)';
+    ctx.beginPath();
+    ctx.ellipse(t.x, t.y + 2, padSize * 0.38, padSize * 0.28, 0, 0, Math.PI * 2);
+    ctx.fill();
   }
 
-  // Soft static aura (no pulse hover)
+  // Soft type aura under body
   const aura = {
-    dart: '#81c784', sniper: '#66bb6a', bomb: '#90a4ae', ice: '#4fc3f7',
+    dart: '#81c784', boomer: '#a1887f', sniper: '#66bb6a', ninja: '#546e7a',
+    water: '#4fc3f7', glue: '#9ccc65', bomb: '#90a4ae', ice: '#4fc3f7',
     farm: '#ffd54f', super: '#ef5350', tack: '#b0bec5', wizard: '#ce93d8'
   }[t.type];
   if (aura && !preview) {
     ctx.save();
-    ctx.globalAlpha = 0.16;
+    ctx.globalAlpha = 0.12;
     ctx.fillStyle = aura;
-    ctx.beginPath(); ctx.arc(t.x, t.y, size * 0.42, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(t.x, t.y, size * 0.38, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
   }
 
-  // Rotation: aim at bloons. Farm/tack stay upright (tack is 360°).
-  // Sprites face up → add PI/2 so "forward" matches aim angle.
-  let rot = 0;
-  if (canAim) rot = aim + Math.PI / 2;
-  else if (t.type === 'tack' && t.shootKick > 0) rot = (1 - t.shootKick) * Math.PI * 0.5; // brief spin on fire
+  // 3) Body sprite key: attack frames while shootKick, else idle
+  let key = 'tower_' + t.type;
+  const drawSize = size + 8;
+  if (!preview && kickAmt > 0.05) {
+    // attack_0 early in kick, attack_1 as kick settles
+    key = kickAmt > 0.45 ? ('tower_' + t.type + '_atk0') : ('tower_' + t.type + '_atk1');
+  }
 
-  if (!drawImg(key, px, py, drawSize, drawSize, rot)) {
-    if (!drawImg('tower_' + t.type, px, py, size, size, rot)) {
+  // Rotation: body turns in place. Farm never aims. Tack spins briefly on fire.
+  let rot = 0;
+  if (canAim && !preview) rot = aim + Math.PI / 2;
+  else if (canAim && preview) rot = -Math.PI / 2; // face up when placing
+  else if (t.type === 'tack' && kickAmt > 0) rot = (1 - kickAmt) * Math.PI * 1.25;
+
+  if (!drawImg(key, bx, by, drawSize, drawSize, rot)) {
+    if (!drawImg('tower_' + t.type, bx, by, size, size, rot)) {
       ctx.fillStyle = def.color;
-      ctx.beginPath(); ctx.arc(px, py, 16, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(bx, by, 16, 0, Math.PI * 2); ctx.fill();
     }
   }
 
-  // Muzzle flash when shooting
+  // 4) Muzzle flash at weapon tip (rotating layer)
   if (!preview && t.shootFlash > 0 && canAim) {
     const fl = t.shootFlash;
-    const fx = t.x + Math.cos(aim) * (size * 0.38);
-    const fy = t.y + Math.sin(aim) * (size * 0.38);
+    const muzzle = (t.type === 'sniper') ? size * 0.48 : size * 0.40;
+    const fx = t.x + Math.cos(aim) * muzzle;
+    const fy = t.y + Math.sin(aim) * muzzle;
     ctx.save();
     ctx.globalAlpha = fl;
     ctx.fillStyle = '#fffde7';
-    ctx.beginPath(); ctx.arc(fx, fy, 6 + 8 * fl, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#ff9800';
-    ctx.beginPath(); ctx.arc(fx, fy, 3 + 4 * fl, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(fx, fy, 5 + 7 * fl, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = t.type === 'super' ? '#ff1744' : t.type === 'wizard' ? '#e040fb' : '#ff9800';
+    ctx.beginPath(); ctx.arc(fx, fy, 2.5 + 4 * fl, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  // Tack pulse ring on fire
+  if (!preview && t.type === 'tack' && kickAmt > 0.2) {
+    ctx.save();
+    ctx.globalAlpha = kickAmt * 0.45;
+    ctx.strokeStyle = '#fff59d';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(t.x, t.y, size * 0.35 * (1.4 - kickAmt), 0, Math.PI * 2);
+    ctx.stroke();
     ctx.restore();
   }
 
   if (t.upgradeLevel > 0) {
     ctx.fillStyle = '#ffd700';
     ctx.font = '11px Arial'; ctx.textAlign = 'center';
-    ctx.fillText('★'.repeat(t.upgradeLevel), t.x, t.y + size * 0.45);
+    ctx.fillText('★'.repeat(t.upgradeLevel), t.x, t.y + size * 0.48);
   }
 }
 function drawProjectile(p) {
   const key = 'proj_' + (p.projType === 'fireball' ? 'fireball' : p.projType);
   const a = Math.atan2(p.vy, p.vx);
-  const size = p.projType === 'bomb' || p.projType === 'fireball' ? 22 : 16;
+  const size = p.projType === 'bomb' || p.projType === 'fireball' ? 22 : p.projType === 'shuriken' ? 18 : 16;
   if (!drawImg(key, p.x, p.y, size, size, a)) {
     ctx.fillStyle = '#fff';
     ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill();
@@ -1711,10 +1967,12 @@ function drawHUD() {
   ctx.fillStyle = '#90caf9'; ctx.font = '13px Segoe UI';
   ctx.fillText(MAPS[selectedMap].name + ' • ' + DIFFS[selectedDiff].name, 480, 25);
 
-  drawSpriteButton(W-340, 8, 70, 34, autoStart ? 'AUTO' : 'Auto', autoStart ? 'ui_btn_green' : 'ui_btn_grey');
-  drawSpriteButton(W-250, 8, 80, 34, '▶ GO', (!roundActive && bloons.filter(b=>b.alive).length===0) ? 'ui_btn_green' : 'ui_btn_grey');
-  drawSpriteButton(W-150, 8, 40, 34, gameSpeed + 'x', 'ui_btn_purple');
-  drawSpriteButton(W-50, 8, 40, 34, '⏸', 'ui_btn_grey');
+  // HUD controls sit left of the full-height tower sidebar when docked right
+  const hudPad = (sidebarSide === 'right' ? sidebarGameW() + 12 : 16);
+  drawSpriteButton(W - hudPad - 290, 8, 70, 34, autoStart ? 'AUTO' : 'Auto', autoStart ? 'ui_btn_green' : 'ui_btn_grey');
+  drawSpriteButton(W - hudPad - 200, 8, 80, 34, '▶ GO', (!roundActive && bloons.filter(b=>b.alive).length===0) ? 'ui_btn_green' : 'ui_btn_grey');
+  drawSpriteButton(W - hudPad - 100, 8, 40, 34, gameSpeed + 'x', 'ui_btn_purple');
+  drawSpriteButton(W - hudPad - 50, 8, 40, 34, '⏸', 'ui_btn_grey');
 
   // Round threat warning banners (camo / lead)
   if (roundWarnings.length || warnBanner) {
@@ -1748,11 +2006,11 @@ function drawHUD() {
 
   // Bottom tower bar removed — BTD right sidebar (DOM) handles tower pick
 
-  // tower info
+  // tower info (sits next to docked sidebar, free of overlap)
   if (selectedTower) {
     const t = selectedTower;
     const def = TOWER_DEFS[t.type];
-    const px = W - 380, ipy = 60;
+    const px = towerPanelX(), ipy = 60;
     drawPanel(px, ipy, 250, 420, 'ui_panel_tower');
     drawImg('tower_' + t.type, px + 125, ipy + 36, 48, 48);
     ctx.fillStyle = '#ffd700'; ctx.font = 'bold 15px Segoe UI'; ctx.textAlign = 'center';
@@ -1967,7 +2225,11 @@ function drawVictory() {
 const BTD_BASE = 'public/assets/ui/btd/';
 const BTD_PORTRAITS = {
   dart: BTD_BASE + 'tower-dart-monkey.png',
+  boomer: BTD_BASE + 'tower-boomerang-monkey.png',
   sniper: BTD_BASE + 'tower-sniper-monkey.png',
+  ninja: BTD_BASE + 'tower-ninja-monkey.png',
+  water: BTD_BASE + 'tower-water-monkey.png',
+  glue: BTD_BASE + 'tower-glue-gunner.png',
   bomb: BTD_BASE + 'tower-cannon-monkey.png',
   ice: BTD_BASE + 'tower-ice.png',
   wizard: BTD_BASE + 'tower-wizard.png',
@@ -2160,7 +2422,9 @@ function renderBtdTowerGrid() {
           rp.style.height = (r * 2) + 'px';
           rp.style.left = sx + 'px';
           rp.style.top = sy + 'px';
-          const ok = canPlace(g.x, g.y) && g.y < H - 40 && g.x < W - 110;
+          mouse.x = g.x; mouse.y = g.y;
+          updateSidebarDock();
+          const ok = canPlace(g.x, g.y) && g.y < H - 40;
           rp.style.borderColor = ok ? 'rgba(76,175,80,.7)' : 'rgba(244,67,54,.7)';
           rp.style.background = ok ? 'rgba(76,175,80,.12)' : 'rgba(244,67,54,.12)';
         };
@@ -2171,7 +2435,9 @@ function renderBtdTowerGrid() {
           btdEl('rangePreview').style.display = 'none';
           const rect = canvas.getBoundingClientRect();
           const g = toGame(ev.clientX - rect.left, ev.clientY - rect.top);
-          if (placingTower === type && canPlace(g.x, g.y) && g.y > 55 && g.y < H - 20 && g.x < W - 110) {
+          mouse.x = g.x; mouse.y = g.y;
+          updateSidebarDock();
+          if (placingTower === type && canPlace(g.x, g.y) && g.y > 55 && g.y < H - 20) {
             if (cash >= def.cost) {
               cash -= def.cost; totalSpent += def.cost;
               towers.push(createTower(type, g.x, g.y));
@@ -2179,6 +2445,7 @@ function renderBtdTowerGrid() {
               if (cash < def.cost) placingTower = null;
             }
           }
+          updateSidebarDock();
           renderBtdTowerGrid();
         };
         window.addEventListener('mousemove', onMove);
@@ -2223,6 +2490,7 @@ function syncBtdUi() {
     sideEl.classList.remove('hidden');
     sideEl.style.display = 'flex';
     sideEl.style.pointerEvents = 'auto';
+    applySidebarDock();
   } else {
     sideEl.classList.add('hidden');
     sideEl.style.display = 'none';
