@@ -228,7 +228,7 @@ const TOWER_DEFS = {
   dart: {
     name: 'Dart Monkey', icon: '🏹', cost: 200, range: 120, fireRate: 0.65, damage: 1, pierce: 1,
     projSpeed: 420, projType: 'dart', special: null, canPopLead: false, canPopFrozen: true, canPopPurple: true,
-    color: '#66bb6a', spriteSize: 52,
+    color: '#66bb6a', spriteSize: 56,
     upgrades: [
       { name: 'Sharp Shots', cost: 150, desc: '+1 pierce', changes: { pierce: 1 } },
       { name: 'Razordarts', cost: 300, desc: '+2 pierce, faster', changes: { pierce: 2, fireRate: -0.12 } },
@@ -238,7 +238,7 @@ const TOWER_DEFS = {
   sniper: {
     name: 'Sniper Monkey', icon: '🎯', cost: 350, range: 9999, fireRate: 1.4, damage: 2, pierce: 1,
     projSpeed: 2000, projType: 'sniper', special: 'infinite_range', canPopLead: false, canPopFrozen: true, canPopPurple: true,
-    canSeeCamo: true, color: '#78909c', spriteSize: 56,
+    canSeeCamo: true, color: '#43a047', spriteSize: 56,
     upgrades: [
       { name: 'Full Metal Jacket', cost: 300, desc: 'Can pop Lead', changes: { canPopLead: true, damage: 1 } },
       { name: 'Large Calibre', cost: 500, desc: '+3 damage', changes: { damage: 3 } },
@@ -248,7 +248,7 @@ const TOWER_DEFS = {
   bomb: {
     name: 'Bomb Shooter', icon: '💣', cost: 525, range: 130, fireRate: 1.1, damage: 1, pierce: 1,
     projSpeed: 280, projType: 'bomb', special: 'aoe', aoeRadius: 40, canPopLead: true, canPopFrozen: true, canPopPurple: true,
-    color: '#546e7a', spriteSize: 54,
+    color: '#78909c', spriteSize: 56,
     upgrades: [
       { name: 'Bigger Bombs', cost: 350, desc: '+50% AoE radius', changes: { aoeRadius: 20 } },
       { name: 'Heavy Bombs', cost: 600, desc: '+2 AoE damage', changes: { damage: 2 } },
@@ -258,7 +258,7 @@ const TOWER_DEFS = {
   ice: {
     name: 'Ice Monkey', icon: '❄️', cost: 300, range: 80, fireRate: 1.8, damage: 0, pierce: 99,
     projSpeed: 0, projType: 'freeze', special: 'freeze', freezeTime: 1.5, canPopLead: false, canPopFrozen: true, canPopPurple: true,
-    color: '#4fc3f7', spriteSize: 50,
+    color: '#4fc3f7', spriteSize: 56,
     upgrades: [
       { name: 'Enhanced Freeze', cost: 200, desc: 'Freeze 2.5s', changes: { freezeTime: 1.0 } },
       { name: 'Permafrost', cost: 450, desc: '50% slow after thaw', changes: { permafrost: true } },
@@ -278,7 +278,7 @@ const TOWER_DEFS = {
   farm: {
     name: 'Banana Farm', icon: '🍌', cost: 1000, range: 0, fireRate: 0, damage: 0, pierce: 0,
     projSpeed: 0, projType: 'none', special: 'income', income: 80, canPopLead: false, canPopFrozen: false, canPopPurple: false,
-    color: '#fbc02d', spriteSize: 52,
+    color: '#fbc02d', spriteSize: 56,
     upgrades: [
       { name: 'More Bananas', cost: 350, desc: '$120 / round', changes: { income: 40 } },
       { name: 'Banana Plantation', cost: 700, desc: '$200 / round', changes: { income: 80 } },
@@ -298,7 +298,7 @@ const TOWER_DEFS = {
   tack: {
     name: 'Tack Shooter', icon: '📌', cost: 280, range: 70, fireRate: 1.0, damage: 1, pierce: 1,
     projSpeed: 300, projType: 'tack', special: 'radial', tackCount: 8, canPopLead: false, canPopFrozen: true, canPopPurple: true,
-    color: '#90a4ae', spriteSize: 52,
+    color: '#90a4ae', spriteSize: 56,
     upgrades: [
       { name: 'Faster Shooting', cost: 200, desc: '+50% attack speed', changes: { fireRate: -0.33 } },
       { name: 'Extra Range Tacks', cost: 250, desc: '+30% range, 10 tacks', changes: { range: 21, tackCount: 2 } },
