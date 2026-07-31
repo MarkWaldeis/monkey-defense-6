@@ -36,6 +36,7 @@ Easy R40 · Medium R60 · Hard R100 · Expert R100 (hpMul 1.35, fewer lives, low
 **Advanced / Expert tabs:** Coming soon placeholder  
 
 ## Combat fixes (2026-07 polish pass)
+- **Dart Monkey visual overhaul:** custom top-down monkey (idle/idle_1/recoil/recover + wooden pad), steel-tipped dart + spiked ball projectiles, new shop icon (`ui/btd/tower-dart-monkey.png`); generator `tools/build_dart_overhaul.py`
 - **Bomb Shooter visual overhaul:** custom cannon sprites (idle/recoil/pad), cannonball + rocket + frag projectiles, new 8-frame explosion art, muzzle-flash sprite, new shop icon (`ui/btd/tower-bomb-icon.png`)
 - Missile path (path 2, tier 2+) renders rockets with smoke trail (`proj.sprite = 'rocket'`, logic stays `projType 'bomb'` so black-bloon immunity is intact)
 - Frag path: tier 2+ spawns real shrapnel projectiles (`projType 'frag'`), tier 3+ spawns secondary cluster blasts (`spawnFrags` / `spawnClusterBlast`)

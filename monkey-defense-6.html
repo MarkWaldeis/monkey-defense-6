@@ -3099,7 +3099,9 @@ function drawProjectile(p) {
   const key = 'proj_' + spriteType;
   const a = Math.atan2(p.vy, p.vx);
   const size = spriteType === 'rocket' ? 30 : spriteType === 'frag' ? 12
-    : p.projType === 'bomb' || p.projType === 'fireball' ? 24 : p.projType === 'shuriken' ? 18 : 16;
+    : p.projType === 'bomb' || p.projType === 'fireball' ? 24
+    : p.projType === 'dart' ? 22 : p.projType === 'spike' ? 24
+    : p.projType === 'shuriken' ? 18 : 16;
   if (!drawImg(key, p.x, p.y, size, size, a)) {
     ctx.fillStyle = '#fff';
     ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill();

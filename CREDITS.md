@@ -44,6 +44,7 @@ CC0: free for commercial and non-commercial use; attribution optional but apprec
 | Shuriken projectile | `public/assets/effects/projectiles/shuriken.png` | Ninja Monkey throws |
 | Ninja Monkey | `public/assets/towers/ninja_monkey/`, `ui/btd/tower-ninja-monkey.png` | Camo-detect tower art |
 | Bomb Shooter overhaul | `public/assets/towers/bomb_shooter/`, `effects/projectiles/{bomb,rocket,frag}.png`, `effects/muzzle_flash.png`, `effects/explosion/`, `ui/btd/tower-bomb-icon.png` | Premium-indie cannon art (`tools/build_bomb_overhaul.py`) — replaces the old Kenney tiles 205–206 |
+| Dart Monkey overhaul | `public/assets/towers/dart_monkey/`, `effects/projectiles/{dart,spike}.png`, `ui/btd/tower-dart-monkey.png` | Premium-indie top-down monkey + dart/spike art (`tools/build_dart_overhaul.py`) — replaces simple green-ball placeholder |
 | Top-down monkeys (all) | `public/assets/towers/*/idle.png`, `attack_*.png`, `pad.png` | BTD6-style top-down pseudo-3D bodies; pad fixed, body rotates |
 | Shared pads | `public/assets/towers/_shared/pad_*.png` | Wood/stone/metal/ice/magic/… platforms |
 | UI buttons, panels, icons, HP bars | `public/assets/ui/` | HUD chrome |
