@@ -282,255 +282,215 @@ def draw_dart_weapon(im, S, cx, tip_y, base_y, variant, ow, show_flights=True):
 
 
 def draw_monkey(S: int, variant: str = "idle") -> Image.Image:
-    """Top-down BTD Dart Monkey facing UP. variant: idle|idle1|recoil|recover.
+    """True top-down Dart Monkey (same camera as sniper/ninja/boomer).
 
-    Weapon is held on the RIGHT of the body pointing UP so the face stays clear
-    (pass-1 bug: centered dart flights read as a face-visor).
+    Seen from ABOVE: circular body, face toward UP (12 o'clock), feet at the
+    bottom of the disc (standing on the pad), dart held pointing UP.
+    variant: idle|idle1|recoil|recover
     """
     im = canvas(S)
-    ow = max(2, round(S * 0.032))
+    ow = max(2, round(S * 0.034))
     cx = S * 0.5
 
+    # subtle pose offsets (still top-down — no side-view lean)
     bob = 0.0
-    lean = 0.0
     if variant == "idle1":
-        bob = -S * 0.012
-    elif variant == "recoil":
-        lean = S * 0.035          # wind-up: sit back
-    elif variant == "recover":
-        lean = -S * 0.028         # follow-through: lean forward
+        bob = -S * 0.008
 
-    body_cy = S * 0.60 + bob + lean * 0.4
-    head_cy = S * 0.34 + bob + lean * 0.55
-    br = S * 0.205
-    hr = S * 0.155
+    # main disc centre slightly below mid so dart tip has room above
+    cy = S * 0.55 + bob
+    R = S * 0.30  # body radius (matches other monkeys' circular silhouettes)
 
-    # ground shadow
+    # soft ground shadow under the standing disc
     sh = canvas(S)
     d = ImageDraw.Draw(sh)
-    d.ellipse((cx - br * 1.1, body_cy + br * 0.4, cx + br * 1.1, body_cy + br * 1.0),
-              fill=(0, 0, 0, 78))
-    over(im, blur(sh, S * 0.022))
+    d.ellipse((cx - R * 1.05, cy - R * 0.85, cx + R * 1.05, cy + R * 1.05),
+              fill=(0, 0, 0, 70))
+    over(im, blur(sh, S * 0.02))
 
-    # ---- feet
+    # ---- feet at BOTTOM of disc (standing on pad; same placement as boomer/sniper) ----
     for side in (-1, 1):
-        fx = cx + side * br * 0.52
-        fy = body_cy + br * 0.78
-        _draw_limb_ellipse(
-            im, S,
-            (fx - S * 0.068, fy - S * 0.04, fx + S * 0.068, fy + S * 0.05),
-            FUR_DARK, ow, light_dir=(-0.3, -0.9))
+        fx = cx + side * R * 0.48
+        fy = cy + R * 0.95          # clearly below body rim = planted on ground
+        frx, fry = R * 0.32, R * 0.24
+        fm = _ellipse_mask(S, (fx - frx, fy - fry, fx + frx, fy + fry))
+        over(im, mask_fill(dilate(fm, max(2, ow * 2 // 3)), OUTLINE + (255,)))
+        over(im, shade_over_mask(fm, FUR_DARK, light_dir=(-0.2, -0.95), light_strength=0.75))
+        # toe pads (top-down)
         d = ImageDraw.Draw(im)
-        for t in (-0.55, 0, 0.55):
-            tx = fx + t * S * 0.028
-            d.ellipse((tx - S * 0.012, fy + S * 0.008, tx + S * 0.012, fy + S * 0.035),
-                      fill=(60, 32, 16, 210))
+        for t in (-0.5, 0.0, 0.5):
+            tx = fx + t * frx * 0.65
+            ty = fy + fry * 0.2
+            tr = frx * 0.24
+            d.ellipse((tx - tr, ty - tr * 0.65, tx + tr, ty + tr * 0.65),
+                      fill=(55, 30, 14, 230))
+            d.ellipse((tx - tr * 0.4, ty - tr * 0.45, tx, ty - tr * 0.05),
+                      fill=(100, 60, 30, 160))
 
-    # ---- hips
+    # ---- ears left/right of head (sides of disc, upper half) ----
     for side in (-1, 1):
-        lx = cx + side * br * 0.40
-        ly = body_cy + br * 0.48
-        _draw_limb_ellipse(
-            im, S,
-            (lx - S * 0.07, ly - S * 0.08, lx + S * 0.07, ly + S * 0.09),
-            FUR_BROWN, ow)
-
-    # ---- back (left) arm resting at side
-    left_x = cx - br * 0.82
-    left_y = body_cy + br * 0.02
-    if variant == "recover":
-        left_y = body_cy - br * 0.05
-    _draw_limb_ellipse(
-        im, S,
-        (left_x - S * 0.075, left_y - S * 0.08, left_x + S * 0.085, left_y + S * 0.1),
-        FUR_BROWN, ow, light_dir=(0.5, -0.7))
-    _draw_limb_ellipse(
-        im, S,
-        (left_x - S * 0.05, left_y + S * 0.02, left_x + S * 0.04, left_y + S * 0.1),
-        SKIN, ow)
-
-    # ---- torso + red shirt
-    body_m = _circle_mask(S, cx, body_cy, br)
-    over(im, mask_fill(dilate(body_m, ow), OUTLINE + (255,)))
-    over(im, shaded_disc(S, cx, body_cy, br, FUR_BROWN, light_strength=0.78))
-    shirt_r = br * 0.80
-    shirt_cy = body_cy - br * 0.05
-    over(im, shade_over_mask(_circle_mask(S, cx, shirt_cy, shirt_r),
-                             RED_SHIRT, light_strength=0.75))
-    d = ImageDraw.Draw(im)
-    d.ellipse((cx - shirt_r * 0.9, shirt_cy - shirt_r * 0.9,
-               cx + shirt_r * 0.9, shirt_cy + shirt_r * 0.9),
-              outline=(90, 12, 14, 170), width=max(1, int(S * 0.011)))
-    belly = _ellipse_mask(S, (cx - shirt_r * 0.4, shirt_cy - shirt_r * 0.12,
-                              cx + shirt_r * 0.4, shirt_cy + shirt_r * 0.52))
-    over(im, shade_over_mask(
-        belly, [(0.0, (180, 70, 50)), (0.5, (240, 120, 95)), (1.0, (255, 170, 140))],
-        light_strength=0.5))
-    im = gloss(im, cx - br * 0.28, body_cy - br * 0.32, br * 0.38, br * 0.2,
-               alpha=40, rot=25)
-
-    # ---- head (clean face — no weapon overlap)
-    for side in (-1, 1):
-        ex = cx + side * hr * 0.98
-        ey = head_cy + hr * 0.08
-        er = hr * 0.40
+        ex = cx + side * R * 0.92
+        ey = cy - R * 0.15
+        er = R * 0.28
         em = _circle_mask(S, ex, ey, er)
         over(im, mask_fill(dilate(em, max(2, ow * 2 // 3)), OUTLINE + (255,)))
         over(im, shaded_disc(S, ex, ey, er, FUR_BROWN, light_strength=0.7))
         over(im, shaded_disc(
-            S, ex, ey, er * 0.5,
+            S, ex, ey, er * 0.52,
             [(0.0, (150, 80, 70)), (0.5, (220, 140, 120)), (1.0, (255, 190, 170))],
             light_strength=0.5))
 
-    head_m = _circle_mask(S, cx, head_cy, hr)
-    over(im, mask_fill(dilate(head_m, ow), OUTLINE + (255,)))
-    over(im, shaded_disc(S, cx, head_cy, hr, FUR_BROWN, light_strength=0.8))
+    # ---- main body disc (fur) ----
+    body_m = _circle_mask(S, cx, cy, R)
+    over(im, mask_fill(dilate(body_m, ow), OUTLINE + (255,)))
+    over(im, shaded_disc(S, cx, cy, R, FUR_BROWN, light_strength=0.78))
 
-    face_cy = head_cy - hr * 0.10
-    face_rx, face_ry = hr * 0.70, hr * 0.66
+    # red shirt disc (slightly smaller, centered)
+    shirt_r = R * 0.78
+    over(im, shade_over_mask(_circle_mask(S, cx, cy, shirt_r),
+                             RED_SHIRT, light_strength=0.72))
+    d = ImageDraw.Draw(im)
+    d.ellipse((cx - shirt_r * 0.92, cy - shirt_r * 0.92,
+               cx + shirt_r * 0.92, cy + shirt_r * 0.92),
+              outline=(90, 12, 14, 160), width=max(1, int(S * 0.01)))
+    # belly patch lower-centre (toward feet)
+    belly = _ellipse_mask(S, (cx - shirt_r * 0.42, cy + shirt_r * 0.05,
+                              cx + shirt_r * 0.42, cy + shirt_r * 0.62))
+    over(im, shade_over_mask(
+        belly, [(0.0, (170, 60, 45)), (0.5, (235, 115, 95)), (1.0, (255, 165, 140))],
+        light_strength=0.45))
+    im = gloss(im, cx - R * 0.28, cy - R * 0.35, R * 0.4, R * 0.22, alpha=42, rot=25)
+
+    # ---- face in UPPER half of disc (looking toward UP / aim direction) ----
+    face_cy = cy - R * 0.22
+    face_rx, face_ry = R * 0.55, R * 0.48
     face_m = _ellipse_mask(S, (cx - face_rx, face_cy - face_ry,
                                cx + face_rx, face_cy + face_ry))
     over(im, shade_over_mask(face_m, SKIN, light_strength=0.72))
-    im = gloss(im, cx - hr * 0.22, face_cy - hr * 0.25, hr * 0.28, hr * 0.16,
-               alpha=55, rot=20)
+    im = gloss(im, cx - R * 0.18, face_cy - R * 0.18, R * 0.22, R * 0.12, alpha=55, rot=20)
 
-    # red bandana across crown
+    # red bandana across forehead (top of face, toward UP)
     bm = Image.new("L", (S, S), 0)
     db = ImageDraw.Draw(bm)
-    db.chord((cx - hr * 1.05, head_cy - hr * 1.05, cx + hr * 1.05, head_cy + hr * 1.05),
-             start=205, end=335, fill=255)
-    clip = Image.new("L", (S, S), 0)
-    ImageDraw.Draw(clip).rectangle(
-        (0, head_cy - hr * 0.95, S, head_cy - hr * 0.22), fill=255)
-    bm = Image.composite(bm, Image.new("L", (S, S), 0), clip)
+    db.rectangle((cx - face_rx * 1.05, face_cy - face_ry * 0.95,
+                  cx + face_rx * 1.05, face_cy - face_ry * 0.15), fill=255)
+    bm = Image.composite(bm, Image.new("L", (S, S), 0), face_m)
     over(im, mask_fill(dilate(bm, max(1, ow // 2)), OUTLINE + (255,)))
     over(im, shade_over_mask(bm, BANDANA, light_strength=0.65))
-    # bandana tails left
+    # knot tails left side
     d = ImageDraw.Draw(im)
     d.polygon([
-        (cx - hr * 0.82, head_cy - hr * 0.32),
-        (cx - hr * 1.28, head_cy - hr * 0.52),
-        (cx - hr * 1.18, head_cy - hr * 0.12),
-        (cx - hr * 0.72, head_cy - hr * 0.18),
+        (cx - face_rx * 0.95, face_cy - face_ry * 0.55),
+        (cx - face_rx * 1.45, face_cy - face_ry * 0.85),
+        (cx - face_rx * 1.35, face_cy - face_ry * 0.15),
+        (cx - face_rx * 0.85, face_cy - face_ry * 0.25),
     ], fill=(200, 30, 28, 255), outline=OUTLINE + (255,))
     d.polygon([
-        (cx - hr * 0.78, head_cy - hr * 0.25),
-        (cx - hr * 1.22, head_cy - hr * 0.02),
-        (cx - hr * 0.98, head_cy + hr * 0.08),
-        (cx - hr * 0.68, head_cy - hr * 0.10),
+        (cx - face_rx * 0.9, face_cy - face_ry * 0.4),
+        (cx - face_rx * 1.4, face_cy - face_ry * 0.05),
+        (cx - face_rx * 1.15, face_cy + face_ry * 0.15),
+        (cx - face_rx * 0.8, face_cy - face_ry * 0.1),
     ], fill=(175, 22, 20, 255), outline=OUTLINE + (255,))
 
-    # eyes
-    eye_y = face_cy - hr * 0.06
-    eye_dx = hr * 0.30
+    # eyes (upper face, looking slightly up)
+    eye_y = face_cy - face_ry * 0.05
+    eye_dx = face_rx * 0.38
     for side in (-1, 1):
         ex = cx + side * eye_dx
-        ew, eh = hr * 0.20, hr * 0.24
+        ew, eh = R * 0.12, R * 0.14
         d.ellipse((ex - ew, eye_y - eh, ex + ew, eye_y + eh),
                   fill=(255, 255, 255, 255), outline=OUTLINE + (255,),
                   width=max(1, ow // 2))
-        ir = hr * 0.10
-        iy = eye_y - hr * 0.035
+        ir = R * 0.065
+        iy = eye_y - R * 0.02
         d.ellipse((ex - ir, iy - ir, ex + ir, iy + ir), fill=(46, 125, 68, 255))
         d.ellipse((ex - ir * 0.5, iy - ir * 0.5, ex + ir * 0.5, iy + ir * 0.5),
                   fill=(18, 38, 22, 255))
-        d.ellipse((ex - ir * 0.35, iy - ir * 0.55, ex - ir * 0.05, iy - ir * 0.18),
+        d.ellipse((ex - ir * 0.35, iy - ir * 0.55, ex - ir * 0.05, iy - ir * 0.15),
                   fill=(255, 255, 255, 230))
+    # brows
     for side in (-1, 1):
         ex = cx + side * eye_dx
-        d.arc((ex - hr * 0.18, eye_y - hr * 0.40, ex + hr * 0.18, eye_y),
+        d.arc((ex - R * 0.12, eye_y - R * 0.22, ex + R * 0.12, eye_y),
               start=200, end=340, fill=OUTLINE + (255,), width=max(2, ow))
 
-    # snout
-    sn_cy = face_cy + hr * 0.34
-    sn_rx, sn_ry = hr * 0.36, hr * 0.26
+    # snout / muzzle (lower face, toward body centre)
+    sn_cy = face_cy + face_ry * 0.55
+    sn_rx, sn_ry = face_rx * 0.42, face_ry * 0.38
     sn_m = _ellipse_mask(S, (cx - sn_rx, sn_cy - sn_ry, cx + sn_rx, sn_cy + sn_ry))
     over(im, shade_over_mask(
         sn_m, [(0.0, (160, 95, 55)), (0.5, (220, 150, 95)), (1.0, (255, 200, 145))],
-        light_strength=0.6))
-    nw, nh = hr * 0.17, hr * 0.11
-    d.ellipse((cx - nw, sn_cy - nh * 1.15, cx + nw, sn_cy + nh * 0.35),
+        light_strength=0.55))
+    nw, nh = R * 0.09, R * 0.06
+    d.ellipse((cx - nw, sn_cy - nh * 1.2, cx + nw, sn_cy + nh * 0.3),
               fill=(70, 35, 22, 255), outline=OUTLINE + (255,), width=max(1, ow // 2))
-    d.ellipse((cx - nw * 0.55, sn_cy - nh * 0.95, cx - nw * 0.08, sn_cy - nh * 0.3),
+    d.ellipse((cx - nw * 0.55, sn_cy - nh * 1.0, cx - nw * 0.08, sn_cy - nh * 0.25),
               fill=(120, 70, 50, 200))
-    d.arc((cx - hr * 0.2, sn_cy - hr * 0.02, cx + hr * 0.2, sn_cy + hr * 0.26),
+    d.arc((cx - R * 0.12, sn_cy - R * 0.01, cx + R * 0.12, sn_cy + R * 0.16),
           start=15, end=165, fill=(90, 40, 25, 255), width=max(2, ow))
 
-    # ---- throwing arm (RIGHT) + dart held clear of face ----
-    # Pose table: hand position and dart tip/base
-    if variant == "recoil":
-        # wind-up: arm low-right, dart cocked beside hip, tip still up
-        hx, hy = cx + br * 0.98, body_cy + br * 0.22
-        dart_cx = hx + S * 0.015
-        tip_y = hy - S * 0.24
-        base_y = hy + S * 0.13
-        arm_mid = (cx + br * 0.72, body_cy + br * 0.12)
-    elif variant == "recover":
-        # follow-through: arm high-forward, dart released upward
-        hx, hy = cx + br * 0.42, head_cy - hr * 0.85
-        dart_cx = hx + S * 0.01
-        tip_y = max(S * 0.02, hy - S * 0.28)
-        base_y = hy + S * 0.06
-        arm_mid = (cx + br * 0.68, body_cy - br * 0.45)
-    else:
-        # idle: dart upright to the RIGHT of the head (face fully visible)
-        hx = cx + br * 0.92
-        hy = head_cy + hr * 0.22 + bob
-        if variant == "idle1":
-            hx += S * 0.012
-            hy -= S * 0.012
-        dart_cx = hx + S * 0.012
-        tip_y = hy - S * 0.34
-        base_y = hy + S * 0.10
-        arm_mid = (cx + br * 0.70, body_cy - br * 0.12)
-
-    # slim limbs via oriented capsules (less "blob arm")
-    def _capsule(x0, y0, x1, y1, thick, stops, ld=(-0.5, -0.8)):
-        # approximate with ellipse around segment midpoint, stretched
-        mx, my = (x0 + x1) / 2, (y0 + y1) / 2
-        length = math.hypot(x1 - x0, y1 - y0) + thick
-        ang = math.degrees(math.atan2(y1 - y0, x1 - x0))
-        m = Image.new("L", (S, S), 0)
-        dm = ImageDraw.Draw(m)
-        # draw thick line as capsule
-        dm.line([(x0, y0), (x1, y1)], fill=255, width=max(2, int(thick * 2)))
-        dm.ellipse((x0 - thick, y0 - thick, x0 + thick, y0 + thick), fill=255)
-        dm.ellipse((x1 - thick, y1 - thick, x1 + thick, y1 + thick), fill=255)
-        over(im, mask_fill(dilate(m, max(1, ow // 2)), OUTLINE + (255,)))
-        over(im, shade_over_mask(m, stops, light_dir=ld, light_strength=0.8))
-
-    sx, sy = cx + br * 0.50, body_cy - br * 0.08
-    _capsule(sx, sy, arm_mid[0], arm_mid[1], S * 0.055, FUR_BROWN)
-    _capsule(arm_mid[0], arm_mid[1], hx, hy, S * 0.048, FUR_BROWN, ld=(-0.45, -0.85))
-    # hand
+    # ---- hands on left/right of disc (top-down paws) ----
+    lx = cx - R * 0.78
+    ly = cy + R * 0.05
+    if variant == "recover":
+        ly = cy - R * 0.15
     _draw_limb_ellipse(
         im, S,
-        (hx - S * 0.042, hy - S * 0.04, hx + S * 0.042, hy + S * 0.045),
-        SKIN, ow)
+        (lx - R * 0.22, ly - R * 0.18, lx + R * 0.22, ly + R * 0.18),
+        SKIN, ow, light_dir=(0.4, -0.8))
 
-    # dart ON TOP of hand, clear of face
+    if variant == "recoil":
+        # wind-up: hand lower-right, dart still pointing up but shorter extension
+        hx = cx + R * 0.55
+        hy = cy + R * 0.35
+        dart_cx = hx
+        tip_y = hy - R * 1.15
+        base_y = hy + R * 0.35
+    elif variant == "recover":
+        # throw: hand upper-right, dart extended high
+        hx = cx + R * 0.35
+        hy = cy - R * 0.55
+        dart_cx = hx
+        tip_y = hy - R * 1.35
+        base_y = hy + R * 0.25
+    else:
+        # idle: hand mid-right, dart upright beside head
+        hx = cx + R * 0.72
+        hy = cy - R * 0.08
+        if variant == "idle1":
+            hx += S * 0.01
+            hy -= S * 0.008
+        dart_cx = hx + S * 0.01
+        tip_y = hy - R * 1.45
+        base_y = hy + R * 0.40
+
+    _draw_limb_ellipse(
+        im, S,
+        (hx - R * 0.22, hy - R * 0.18, hx + R * 0.22, hy + R * 0.18),
+        SKIN, ow, light_dir=(-0.5, -0.7))
+
+    # dart pointing UP (on top of hand)
     draw_dart_weapon(im, S, dart_cx, tip_y, base_y, variant, ow, show_flights=True)
 
-    # fingers over shaft (compact so shaft still reads)
+    # fingers over shaft (top-down)
     d = ImageDraw.Draw(im)
-    for ox in (-0.018, 0.0, 0.018):
-        d.ellipse((hx + ox * S - S * 0.01, hy - S * 0.006,
-                   hx + ox * S + S * 0.01, hy + S * 0.022),
+    for ox in (-0.08, 0.0, 0.08):
+        d.ellipse((hx + ox * R - R * 0.06, hy - R * 0.04,
+                   hx + ox * R + R * 0.06, hy + R * 0.08),
                   fill=(210, 140, 90, 245), outline=OUTLINE + (200,))
 
     if variant == "recoil":
         sm = canvas(S)
         dsm = ImageDraw.Draw(sm)
         for i in range(3):
-            wx = cx + (i - 1) * S * 0.055
-            wy = body_cy + br * 0.9
-            wr = S * (0.038 + i * 0.01)
-            dsm.ellipse((wx - wr, wy - wr * 0.45, wx + wr, wy + wr * 0.45),
-                        fill=(180, 150, 100, 95))
-        over(im, blur(sm, S * 0.014))
+            wx = cx + (i - 1) * S * 0.05
+            wy = cy + R * 0.95
+            wr = S * (0.035 + i * 0.01)
+            dsm.ellipse((wx - wr, wy - wr * 0.4, wx + wr, wy + wr * 0.4),
+                        fill=(180, 150, 100, 90))
+        over(im, blur(sm, S * 0.012))
 
     return im
-
 
 
 # ---------------------------------------------------------------- pad
