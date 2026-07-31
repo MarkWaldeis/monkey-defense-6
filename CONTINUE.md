@@ -36,6 +36,9 @@ Easy R40 · Medium R60 · Hard R100 · Expert R100 (hpMul 1.35, fewer lives, low
 **Advanced / Expert tabs:** Coming soon placeholder  
 
 ## Combat fixes (2026-07 polish pass)
+- **Bomb Shooter visual overhaul:** custom cannon sprites (idle/recoil/pad), cannonball + rocket + frag projectiles, new 8-frame explosion art, muzzle-flash sprite, new shop icon (`ui/btd/tower-bomb-icon.png`)
+- Missile path (path 2, tier 2+) renders rockets with smoke trail (`proj.sprite = 'rocket'`, logic stays `projType 'bomb'` so black-bloon immunity is intact)
+- Frag path: tier 2+ spawns real shrapnel projectiles (`projType 'frag'`), tier 3+ spawns secondary cluster blasts (`spawnFrags` / `spawnClusterBlast`)
 - `canPopPurple` honored for magic/laser/plasma (Archmage / Super can pop purple when flagged)
 - Pierce **not** consumed on blocked hits (lead/camo/immune)
 - Bomb Blitz uses `projType: 'blitz'` so black bloons are wiped too

@@ -24,7 +24,7 @@ Original tower-defense game inspired by the Bloons TD genre.
 
 - Map terrain tiles (grass, dirt/path, sand, water edges)
 - Tower sprites (turrets, rocket launchers, tanks, crystal pads)
-- **Bomb Shooter** — Kenney rocket tiles (`towerDefense_tile205–206`) as rotating top-down turret + pad
+- **Bomb Shooter** — formerly Kenney rocket tiles; since the bomb overhaul fully custom (see project-generated sprites below)
 - **Tack Shooter** — Kenney multi-barrel (`towerDefense_tile203–204`) rotating top-down + pad
 - Shared circular pads under all towers (BTD-style fixed base)
 - MOAB-class enemies (planes / tanks recolored as aerial blimps)
@@ -43,6 +43,7 @@ CC0: free for commercial and non-commercial use; attribution optional but apprec
 | Magic / laser / plasma / ice orbs | `public/assets/effects/projectiles/` | Energy projectiles |
 | Shuriken projectile | `public/assets/effects/projectiles/shuriken.png` | Ninja Monkey throws |
 | Ninja Monkey | `public/assets/towers/ninja_monkey/`, `ui/btd/tower-ninja-monkey.png` | Camo-detect tower art |
+| Bomb Shooter overhaul | `public/assets/towers/bomb_shooter/`, `effects/projectiles/{bomb,rocket,frag}.png`, `effects/muzzle_flash.png`, `effects/explosion/`, `ui/btd/tower-bomb-icon.png` | Premium-indie cannon art (`tools/build_bomb_overhaul.py`) — replaces the old Kenney tiles 205–206 |
 | Top-down monkeys (all) | `public/assets/towers/*/idle.png`, `attack_*.png`, `pad.png` | BTD6-style top-down pseudo-3D bodies; pad fixed, body rotates |
 | Shared pads | `public/assets/towers/_shared/pad_*.png` | Wood/stone/metal/ice/magic/… platforms |
 | UI buttons, panels, icons, HP bars | `public/assets/ui/` | HUD chrome |

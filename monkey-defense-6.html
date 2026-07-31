@@ -602,6 +602,7 @@ const PROJ_SPRITE = {
   laser: 'effects/projectiles/laser.png', plasma: 'effects/projectiles/plasma.png',
   tack: 'effects/projectiles/tack.png', spike: 'effects/projectiles/spike.png',
   rocket: 'effects/projectiles/rocket.png', sniper: 'effects/projectiles/bullet.png',
+  frag: 'effects/projectiles/frag.png',
   fireball: 'effects/projectiles/flame1.png', shuriken: 'effects/projectiles/shuriken.png',
   water: 'effects/projectiles/water.png', glue: 'effects/projectiles/glue.png',
   boomerang: 'effects/projectiles/boomerang.png'
@@ -651,6 +652,7 @@ function buildAssetList() {
   for (let i = 0; i < 6; i++) add('fx_fire_' + i, `effects/fire/fire_0${i}.png`);
   for (let i = 0; i < 6; i++) add('fx_magic_' + i, `effects/magic/magic_0${i}.png`);
   for (let i = 0; i < 6; i++) add('fx_pop_' + i, `bloons/pop_animation/pop_0${i}.png`);
+  add('fx_muzzle', 'effects/muzzle_flash.png');
   // Kenney extras for map variety
   [1,2,3,7,10,22,24,25,37,69,100,130,131,132,133,134,135,136,137,154,180,181,203,204,205,206,249,250,270,271,291,292].forEach(n => {
     const id = String(n).padStart(3, '0');
@@ -1483,6 +1485,37 @@ function spawnExplosion(x, y, r) {
   spawnSpriteAnim('fx_explosion_', 8, x, y, r * 2.2, 16);
   spawnParticles(x, y, '#ff6d00', 8, 160);
 }
+// Frag path (bomb path 3): real shrapnel shards fly out of the blast
+function spawnFrags(x, y, count, src) {
+  for (let i = 0; i < count; i++) {
+    const a = (i / count) * Math.PI * 2 + Math.random() * 0.5;
+    const spd = rand(200, 300);
+    projectiles.push({
+      x, y, vx: Math.cos(a) * spd, vy: Math.sin(a) * spd, target: null,
+      damage: 1, pierce: 2, hit: [], projType: 'frag', aoeRadius: 0,
+      canPopLead: false, canPopFrozen: true, canPopPurple: true,
+      canSeeCamo: !!(src && src.canSeeCamo), moabMul: 1,
+      glueSlow: 0.5, glueTime: 3, special: null,
+      life: 0.32, r: 4, source: src || null
+    });
+  }
+}
+// Cluster path (bomb path 3, tier 3+): secondary bomblets burst around the main blast
+function spawnClusterBlast(x, y, ar, dmg, count, src) {
+  for (let i = 0; i < count; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const d = rand(ar * 0.35, ar * 0.85);
+    const cx = x + Math.cos(a) * d, cy = y + Math.sin(a) * d;
+    const cr = Math.max(18, ar * 0.45);
+    for (const b of bloons) {
+      if (b.alive && dist2(cx, cy, b.x, b.y) < cr * cr) {
+        damageBloon(b, dmg, src || { projType: 'bomb' });
+      }
+    }
+    spawnExplosion(cx, cy, cr);
+    spawnFrags(cx, cy, 3, src);
+  }
+}
 function spawnPop(x, y) {
   spawnSpriteAnim('fx_pop_', 6, x, y, 36, 18);
 }
@@ -1716,6 +1749,8 @@ function makeProj(tower, x, y, vx, vy, target) {
     x, y, vx, vy, target,
     damage: tower.damage, pierce: tower.pierce, hit: [],
     projType: tower.projType, aoeRadius: tower.aoeRadius || 0,
+    // Missile path (bomb path 2, tier 2+ 'Missile Launcher') renders as a rocket
+    sprite: (tower.type === 'bomb' && tower.paths && tower.paths[1] >= 2) ? 'rocket' : null,
     canPopLead: tower.canPopLead, canPopFrozen: tower.canPopFrozen,
     canPopPurple: tower.canPopPurple, canSeeCamo: tower.canSeeCamo,
     moabMul: tower.moabMul,
@@ -2543,6 +2578,14 @@ function updateGameplay(t, diff) {
       p.vy = (p.target.y - p.y) / d * spd;
     }
     p.x += p.vx * t; p.y += p.vy * t;
+    // Missile trail (bomb missile path)
+    if (p.sprite === 'rocket' && Math.random() < 0.7) {
+      particles.push({
+        x: p.x, y: p.y, vx: rand(-15, 15), vy: rand(-15, 15),
+        life: 0.25, maxLife: 0.25, r: rand(2, 4),
+        color: Math.random() < 0.5 ? '#ffb74d' : '#b0bec5', type: 'circle'
+      });
+    }
     let hit = false;
     for (const b of bloons) {
       if (!b.alive || p.hit.includes(b)) continue;
@@ -2557,7 +2600,15 @@ function updateGameplay(t, diff) {
               if (p.source && p.source.freezeTime > 0) freezeBloon(b2, p.source.freezeTime, false, false);
             }
           }
-          spawnExplosion(p.x, p.y, ar); sfx(p.projType === 'water' ? 'pop' : 'explode'); hit = true; break;
+          spawnExplosion(p.x, p.y, ar); sfx(p.projType === 'water' ? 'pop' : 'explode'); hit = true;
+          // Frag path: shrapnel (tier 2+), cluster bomblets (tier 3+), more of each at tier 4+
+          const src = p.source;
+          if (p.projType === 'bomb' && src && src.type === 'bomb' && src.paths) {
+            const fragTier = src.paths[2];
+            if (fragTier >= 2) spawnFrags(p.x, p.y, fragTier >= 4 ? 10 : 6, src);
+            if (fragTier >= 3) spawnClusterBlast(p.x, p.y, ar, Math.max(1, Math.floor(p.damage * 0.5)), fragTier >= 4 ? 6 : 3, src);
+          }
+          break;
         } else if (p.projType === 'glue') {
           p.hit.push(b);
           const isMoab = !!BLOON_TYPES[b.type].moab;
@@ -2997,6 +3048,14 @@ function drawTower(t, preview) {
     const muzzle = (t.type === 'sniper') ? size * 0.48 : size * 0.40;
     const fx = t.x + Math.cos(aim) * muzzle;
     const fy = t.y + Math.sin(aim) * muzzle;
+    // Bomb cannon: real muzzle-flash sprite (faces right, rotate into aim direction)
+    if (t.type === 'bomb' && img('fx_muzzle')) {
+      const fs = size * (0.55 + 0.45 * fl);
+      ctx.save();
+      ctx.globalAlpha = fl;
+      drawImg('fx_muzzle', fx + Math.cos(aim) * fs * 0.3, fy + Math.sin(aim) * fs * 0.3, fs, fs, aim);
+      ctx.restore();
+    }
     ctx.save();
     ctx.globalAlpha = fl;
     ctx.fillStyle = '#fffde7';
@@ -3036,9 +3095,11 @@ function drawTower(t, preview) {
   }
 }
 function drawProjectile(p) {
-  const key = 'proj_' + (p.projType === 'fireball' ? 'fireball' : p.projType);
+  const spriteType = p.sprite || (p.projType === 'fireball' ? 'fireball' : p.projType);
+  const key = 'proj_' + spriteType;
   const a = Math.atan2(p.vy, p.vx);
-  const size = p.projType === 'bomb' || p.projType === 'fireball' ? 22 : p.projType === 'shuriken' ? 18 : 16;
+  const size = spriteType === 'rocket' ? 30 : spriteType === 'frag' ? 12
+    : p.projType === 'bomb' || p.projType === 'fireball' ? 24 : p.projType === 'shuriken' ? 18 : 16;
   if (!drawImg(key, p.x, p.y, size, size, a)) {
     ctx.fillStyle = '#fff';
     ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill();
@@ -3334,7 +3395,7 @@ const BTD_PORTRAITS = {
   water: BTD_BASE + 'tower-water-monkey.png',
   sub: BTD_BASE + 'tower-sub-monkey.png',
   glue: BTD_BASE + 'tower-glue-gunner.png',
-  bomb: BTD_BASE + 'tower-cannon-monkey.png',
+  bomb: BTD_BASE + 'tower-bomb-icon.png',
   ice: BTD_BASE + 'tower-ice.png',
   wizard: BTD_BASE + 'tower-wizard.png',
   farm: BTD_BASE + 'tower-farm.png',
